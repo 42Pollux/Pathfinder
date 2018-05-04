@@ -1,4 +1,4 @@
-package com.pathfinder.pathfindertestclient;
+package ui.pathfinder;
 
 import android.app.NotificationManager;
 import android.support.v4.app.NotificationCompat;
@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.util.concurrent.TimeUnit;
 import android.content.Context;
 import android.support.v4.app.NotificationCompat.Builder;
+import ui.pathfinder.ConnectionCodes;
 
 /**
  * Created by pollux on 29.01.18.
