@@ -1,28 +1,28 @@
 /**
- * 
+ * @author pollux
+ *
  */
 package network;
 
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 
 // TODO 
-// e.getMessage() remove line break at the end
+// - implement the possibility to stop the thread from the outside 
 
-/**
- * @author pollux
- *
- */
+
 public class AsynConnectionThread extends Thread {
 	private Socket client;
 	private PrintWriter out;
 	private BufferedReader in;
 	private DataOutputStream out_data;
 	private DataInputStream in_data;
+	private int calculation_delay = 25;
+	private int package_delay = 50;
 	private int ref = 0;
+	private String public_key = "123456";
+	private String client_uid = null;
 	
 	public AsynConnectionThread(Socket _client, int _ref) {
 		client = _client;
@@ -41,9 +41,31 @@ public class AsynConnectionThread extends Thread {
 		}
 		
 	}
+	
+	
+	
+	
+	
+	
+	// ##################################################################################
+	// AUTHENTICATION
 
+	
 	public void run(){
 		
+		// exchange public keys
+		if(keyExchange()<0) {
+			OSDepPrint.error("Client failed to authenticate", ref);
+			return;
+		}
+		
+		// decrypt uid
+		// TODO implement
+		
+		// validate uid
+		// TODO implement
+		
+		// process request
 		int response = getCode(5000);
 		if(response >= 1){
 			switch(response){
@@ -57,6 +79,68 @@ public class AsynConnectionThread extends Thread {
 		}
 		
 	}
+	
+	/**
+	 * Waits for the client public key and responds with the public key of the server.
+	 * @return	0 on success, -1 on error
+	 */
+	public int keyExchange() {
+		String client_public_key = null;
+		if((client_public_key = getTextResponse())==null) {
+			return -1;
+		} else {
+			writeText(public_key);
+		}
+		
+		String client_encrypted_uid = null;
+		if((client_encrypted_uid = getTextResponse())==null) {
+			return -1;
+		} else {
+			client_uid = client_encrypted_uid;
+		}
+		
+		return 0;
+	}
+	
+	/**
+	 * Filters the next incoming code and calls the corresponding function.
+	 * Performs a disconnect after the called functions finish.
+	 * 
+	 */
+	private void request(){
+		switch(getCode(5000)){
+		case ConnectionCodes.REGISTER:	OSDepPrint.net("UID requested", ref);
+										register();
+										break;
+		case ConnectionCodes.MAP: 		map();
+										break;	
+		case ConnectionCodes.MAPPART: 	OSDepPrint.net("Mappart requested", ref);
+										OSDepPrint.info("Terminating", ref);
+										// TODO Implement
+										break;
+		case ConnectionCodes.RETRY:		OSDepPrint.net("Retry requested", ref);
+										retry();
+										break;
+		case -1:						// TODO Fehlerbehandlung
+										break;
+		case -2:						// TODO Fehlerbehandlung
+										break;
+		}
+		
+		disconnect();
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// ##################################################################################
+	// NETWORKING
+	
 	
 	/**
 	 * Closes the socket that is bound to the current connection.
@@ -135,14 +219,19 @@ public class AsynConnectionThread extends Thread {
                 return -2;
             }
 
-            sleep(250);
-            timeout += 250;
+            sleep(10);
+            timeout += 10;
 
         }
 		return -1;
 	}
 	
-	// DEPRECATED
+	/**
+	 * Reads in all characters from the current stream until the 
+	 * new line character appears.
+	 * 
+	 * @return				Text response as string.
+	 */
 	private String getTextResponse(){
 		String response = "";
 		int timeout = 0;
@@ -153,7 +242,7 @@ public class AsynConnectionThread extends Thread {
                     int tmp_char = in.read();
                     String tmp_string = Character.toString((char) tmp_char);
                     response += tmp_string;
-                    if("\n".equals(tmp_string)) return response;
+                    if("\n".equals(tmp_string)) return response.substring(0, response.length()-1);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -161,43 +250,49 @@ public class AsynConnectionThread extends Thread {
                 return null;
             }
 
-            sleep(250);
-            timeout += 250;
+            sleep(10);
+            timeout += 10;
 
         }
 		return null;
 	}
 	
-
 	/**
-	 * Filters the next incoming code and calls the corresponding function.
-	 * Performs a disconnect after the called functions finish.
+	 * Writes a single byte to the output stream and flushes
+	 * 
+	 * @param code			the byte written
 	 */
-	private void request(){
-		switch(getCode(5000)){
-		case ConnectionCodes.REGISTER:	OSDepPrint.net("UID requested", ref);
-										register();
-										break;
-		case ConnectionCodes.MAP: 		map();
-										break;	
-		case ConnectionCodes.MAPPART: 	OSDepPrint.net("Mappart requested", ref);
-										OSDepPrint.info("Terminating", ref);
-										// TODO Implement
-										break;
-		case ConnectionCodes.RETRY:		OSDepPrint.net("Retry requested", ref);
-										retry();
-										break;
-		case -1:						// TODO Fehlerbehandlung
-										break;
-		case -2:						// TODO Fehlerbehandlung
-										break;
-		}
-		
-		disconnect();
-	}
+	private void writeCode(int code){
+        try {
+            out_data.write(code);
+            out_data.write(ConnectionCodes.END);
+            out_data.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // TODO Fehlerbehandlung
+        }
+
+    }
 	
 	/**
-	 * Generates a UID and sends it to the client in plaintext
+	 * Writes a string to the output stream and flushes
+	 * 
+	 * @param str			the string written	
+	 */
+	private void writeText(String str){
+        try {
+            out_data.writeChars(str + "\n");
+            out_data.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // TODO Fehlerbehandlung
+        }
+
+    }
+	
+	/**
+	 * Generates a UID and sends it to the client
+	 * TODO rework with encryption
 	 */
 	private void register(){
 		
@@ -223,6 +318,10 @@ public class AsynConnectionThread extends Thread {
 			return -1;
 		}
 		OSDepPrint.net("Map requested (" + mapcode + ")", ref);
+		
+		// calculate average package delay
+		package_delay = calcAvgDelay();
+		
 		if(sendFile("/home/michael/pathfinder/video.mp4", 0)<0){
 			OSDepPrint.error("File transfer incomplete", ref);
 			return -2;
@@ -278,12 +377,11 @@ public class AsynConnectionThread extends Thread {
 		
         return 0;
 	}
-
+	
 	/**
 	 * Sends out the file size as type long. The function then proceeds
-	 * to write 1 MB of data to the stream and wait for an 'ACK' from the
-	 * client. The whole file is transferred as packages of 1 MB size.
-	 * TODO implement a method to send out more than 1 MB
+	 * to write 2 MB of data to the stream and wait for an 'ACK' from the
+	 * client. The whole file is transferred as packages of 2 MB size.
 	 * 
 	 * @param filepath			path to the file that should be sent
 	 * @param remainingBytes	bytes remaining for the client (for retries)
@@ -294,7 +392,7 @@ public class AsynConnectionThread extends Thread {
 		long progress = 0;
 		File filedata = new File(filepath);
 		long fileSize = filedata.length();
-		int timeout = 130 * 1000; 																						// 130s initial timeout
+		int timeout = 130 * 1000 * 2; // 260s timeout
 		float dlspeed = 0.0f;
 		
 		
@@ -312,7 +410,7 @@ public class AsynConnectionThread extends Thread {
 		try {
 			DataInputStream in_file = new DataInputStream(new FileInputStream(filedata));
 			
-			byte[] buffer = new byte[1048576];
+			byte[] buffer = new byte[1024 * 1024 * 2]; // 1048576
 			do {
 				long offset = 0;
 				if(remainingBytes>0){
@@ -320,7 +418,7 @@ public class AsynConnectionThread extends Thread {
 						curr = in_file.read(buffer, 0, buffer.length);
 						progress += curr;
 					} while((fileSize-remainingBytes)>progress);
-					offset = (1024*1024) - (progress - (fileSize - remainingBytes));
+					offset = (1024*1024 * 2) - (progress - (fileSize - remainingBytes));
 					remainingBytes = 0;
 				} else {
 					curr = in_file.read(buffer, 0, buffer.length);
@@ -334,10 +432,11 @@ public class AsynConnectionThread extends Thread {
 				long seconds = sendCustomPackage(buffer, (int)offset, curr, timeout);
 				if(seconds<0){
 					out_data.close();
+					in_file.close();
 					OSDepPrint.printProgressStop();
 					return -1;
 				}
-				dlspeed = 1024.0f/((float)seconds/1000.0f);
+				dlspeed = 2048.0f/((float)seconds/1000.0f);
 
 				
 				OSDepPrint.printProgress(progress, fileSize-remainingBytes, dlspeed, ref);
@@ -345,11 +444,12 @@ public class AsynConnectionThread extends Thread {
 			} while(curr>0);
 			
 			out_data.close();
+			in_file.close();
 			OSDepPrint.printProgress(progress, fileSize-remainingBytes, dlspeed, ref);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			//e.printStackTrace();
-			OSDepPrint.error("(231) " + e.getMessage(), ref);
+			OSDepPrint.error("(392) " + e.getMessage(), ref);
 			OSDepPrint.printProgressStop();
 			return -1;
 		}
@@ -358,36 +458,65 @@ public class AsynConnectionThread extends Thread {
 	}	
 	
 	/**
-	 * Writes bytes from 'bytePackage' with the specified 'offset' 
+	 * Writes bytes from 'bytePackage' with the specified 'offset' and 'packageSize' 
 	 * 
 	 * @param bytePackage		byte-array containing the data
 	 * @param offset			where to start in the byte-array
 	 * @param packageSize		amount of bytes the function should write
 	 * @param delay				DEPRECATED
-	 * @return					time needed by the client to receive the file, -1 on error
+	 * @return					time needed by the client to receive the file in milliseconds, -1 on error
 	 */
 	private long sendCustomPackage(byte[] bytePackage, int offset, int packageSize, int delay) {
-		long time_start = System.currentTimeMillis();
 		try {
+			long time_start = System.nanoTime();
+
 			// send the packet
 			out_data.write(bytePackage, offset, packageSize-offset);
 			out_data.flush();
+			
 			
 			// receive the time needed by the client (initial timeout of 130 seconds)
 			// 128 seconds are needed to transmit 1 MB of data with 64KBit/s
 			// 64KBit/s is the lowest acceptable bandwidth
 			if(getCode(delay)==ConnectionCodes.ACK){
-				long time_needed = (System.currentTimeMillis() - time_start); 
-				return time_needed;
+				long time_needed = (System.nanoTime() - time_start);
+				//OSDepPrint.debug("Time needed: " + ((time_needed/1000000) - calculation_delay - 2*package_delay), ref);
+				return (time_needed/1000000) - calculation_delay - 2*package_delay;
 			} else {
 				return -1;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			OSDepPrint.error("(304) " + e.getMessage(), ref);
+			OSDepPrint.error("(471) " + e.getMessage(), ref);
 		}
 		
 		return -1;
+	}
+	
+	/**
+	 * Calculates the average delay in milliseconds a package needs to travel from
+	 * server to client and opposite. Five 'pings' are being sent to the client.
+	 * 
+	 * @return	the average delay in milliseconds
+	 */
+	private int calcAvgDelay() {
+		int avg = 0;
+		String values = "";
+		
+		for(int i = 0; i<5; i++) {
+			writeCode(ConnectionCodes.PING);
+			long time_start = System.nanoTime();
+			if(getCode(5000)!=ConnectionCodes.PING) return -1;
+			long time_needed = System.nanoTime() - time_start;
+			time_needed = time_needed / 1000000;
+			if((time_needed>10000)||(time_needed<1)) time_needed = 100;
+			values = values + (time_needed/2) + ", ";
+			avg += time_needed;
+		}
+		avg = (avg/5/2) - calculation_delay;
+		OSDepPrint.info("Average delay to client " + avg + "ms (" + values.substring(0, values.length()-2) + ", cd=25ms)", ref);
+		
+		return avg;
 	}
 	
 
