@@ -1,4 +1,4 @@
-package com.pathfinder.pathfindertestclient;
+package ui.pathfinder;
 
 import android.app.NotificationManager;
 import android.support.v4.app.NotificationCompat;

@@ -1,4 +1,4 @@
-package com.pathfinder.pathfindertestclient;
+package ui.pathfinder;
 
 public class ConnectionCodes {
     public static final String serverIP = "62.113.206.126"; // "192.168.188.55";
