@@ -213,15 +213,21 @@ class ThreadRequest implements Runnable {
     public int keyExchange() {
         String server_public_key = null;
         String encrypted_uid = "";
+        Cryptography.initialize();
 
         // send the public key
-        writeText(public_key);
+        writeText(Cryptography.getRSAPublicKey());
 
         // wait for the servers public key
         if((server_public_key = getTextResponse())==null) return -1;
+        Cryptography.setServerPublicKey(server_public_key);
+
+        // encrypt the session key
+        // send the session key
+        writeText(Cryptography.getAESEncryptedKey());
 
         // encrypt the uid
-        // TODO implement
+        encrypted_uid = Cryptography.encryptText("7fh87f4i7f7sfei3");
 
         // send the encrypted uid
         writeText(encrypted_uid);

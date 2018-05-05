@@ -6,6 +6,7 @@ package network;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 // TODO 
@@ -89,14 +90,22 @@ public class AsynConnectionThread extends Thread {
 		if((client_public_key = getTextResponse())==null) {
 			return -1;
 		} else {
-			writeText(public_key);
+			// TODO save client public key for later
+			writeText(Cryptography.getRSAPublicKey());
+		}
+		
+		String client_encrypted_aes_key = null;
+		if((client_encrypted_aes_key = getTextResponse())==null) {
+			return -1;
+		} else {
+			Cryptography.setAesKey(Cryptography.decryptKeyRSA(Base64.getDecoder().decode(client_encrypted_aes_key)));
 		}
 		
 		String client_encrypted_uid = null;
 		if((client_encrypted_uid = getTextResponse())==null) {
 			return -1;
 		} else {
-			client_uid = client_encrypted_uid;
+			client_uid = Cryptography.decryptText(client_encrypted_uid);
 		}
 		
 		return 0;

@@ -18,6 +18,7 @@ public class AsynServerListener extends Thread {
 
 		// Server initialisieren
 		try {
+			Cryptography.initialize();
 			server = new ServerSocket(port, 0, InetAddress.getByName("62.113.206.126")); //192.168.188.55 //62.113.206.126
 		} catch (IOException e1) {
 			e1.printStackTrace();
