@@ -1,18 +1,22 @@
-/**
- * @author pollux
- *
- */
 package network;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
-// TODO 
-// - implement the possibility to stop the thread from the outside 
+import server.OSDepPrint;
 
-
-public class AsynConnectionThread extends Thread {
+public class Connector {
 	private Socket client;
 	private PrintWriter out;
 	private BufferedReader in;
@@ -21,10 +25,9 @@ public class AsynConnectionThread extends Thread {
 	private int calculation_delay = 25;
 	private int package_delay = 50;
 	private int ref = 0;
-	private String public_key = "123456";
 	private String client_uid = null;
-	
-	public AsynConnectionThread(Socket _client, int _ref) {
+
+	public Connector(Socket _client, int _ref) {
 		client = _client;
 		ref = _ref;
 		try {
@@ -39,49 +42,16 @@ public class AsynConnectionThread extends Thread {
 			OSDepPrint.error("Failed to create client streams", ref);
 			// TODO stop thread
 		}
-		
-	}
-	
-	
-	
-	
-	
-	
-	// ##################################################################################
-	// AUTHENTICATION
-
-	
-	public void run(){
-		
-		// exchange public keys
-		if(keyExchange()<0) {
-			OSDepPrint.error("Client failed to authenticate", ref);
-			return;
-		}
-		
-		// decrypt uid
-		// TODO implement
-		
-		// validate uid
-		// TODO implement
-		
-		// process request
-		int response = getCode(5000);
-		if(response >= 1){
-			switch(response){
-	        case ConnectionCodes.REQUEST: 	request();
-											return;
-	        }
-		} else if(response==-2){
-			OSDepPrint.error("Exception occurred", ref);
-		} else {
-			OSDepPrint.error("No response within time limit", ref);
-		}
-		
 	}
 	
 	/**
-	 * Waits for the client public key and responds with the public key of the server.
+	 * Performs the key exchange of the RSA public keys and the AES key.
+	 * Current sequence of events:
+	 * 1. Client sends his public key base64 encoded.
+	 * 2. Server sends his public key base64 encoded.
+	 * 3. Client sends the RSA encrypted and base64 encoded AES key (session key).
+	 * 4. Client sends the AES encrypted and base64 encoded UID.
+	 * 
 	 * @return	0 on success, -1 on error
 	 */
 	public int keyExchange() {
@@ -89,58 +59,31 @@ public class AsynConnectionThread extends Thread {
 		if((client_public_key = getTextResponse())==null) {
 			return -1;
 		} else {
-			writeText(public_key);
+			// TODO save client public key for later
+			OSDepPrint.debug("[KEYEX] received client public key: " + client_public_key, ref);
+			writeText(Cryptography.getRSAPublicKey_base64Format());
+			OSDepPrint.debug("[KEYEX] sending public key: " + Cryptography.getRSAPublicKey_base64Format(), ref);
+		}
+		
+		String client_encrypted_aes_key = null;
+		if((client_encrypted_aes_key = getTextResponse())==null) {
+			return -1;
+		} else {
+			OSDepPrint.debug("[KEYEX] received client encrypted AES key: " + client_encrypted_aes_key, ref);
+			Cryptography.setAesKey(Cryptography.decryptAESKeyWithRSA(Base64.getDecoder().decode(client_encrypted_aes_key)));
 		}
 		
 		String client_encrypted_uid = null;
 		if((client_encrypted_uid = getTextResponse())==null) {
 			return -1;
 		} else {
-			client_uid = client_encrypted_uid;
+			OSDepPrint.debug("[KEYEX] received client encrypted UID", ref);
+			client_uid = Cryptography.decryptText(client_encrypted_uid);
+			OSDepPrint.debug("[KEYEX] Client UID: " + client_uid, ref);
 		}
 		
 		return 0;
 	}
-	
-	/**
-	 * Filters the next incoming code and calls the corresponding function.
-	 * Performs a disconnect after the called functions finish.
-	 * 
-	 */
-	private void request(){
-		switch(getCode(5000)){
-		case ConnectionCodes.REGISTER:	OSDepPrint.net("UID requested", ref);
-										register();
-										break;
-		case ConnectionCodes.MAP: 		map();
-										break;	
-		case ConnectionCodes.MAPPART: 	OSDepPrint.net("Mappart requested", ref);
-										OSDepPrint.info("Terminating", ref);
-										// TODO Implement
-										break;
-		case ConnectionCodes.RETRY:		OSDepPrint.net("Retry requested", ref);
-										retry();
-										break;
-		case -1:						// TODO Fehlerbehandlung
-										break;
-		case -2:						// TODO Fehlerbehandlung
-										break;
-		}
-		
-		disconnect();
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	// ##################################################################################
-	// NETWORKING
-	
 	
 	/**
 	 * Closes the socket that is bound to the current connection.
@@ -149,7 +92,7 @@ public class AsynConnectionThread extends Thread {
 	 * 
 	 * @return	0 for success or -1 if the client is already disconnected
 	 */
-	private int disconnect(){
+	public int disconnect(){
 		try {
 			client.shutdownOutput();
 			OSDepPrint.info("connection closed", ref);
@@ -200,7 +143,7 @@ public class AsynConnectionThread extends Thread {
 	 * @param timeout_ms	time we wait for the response in milliseconds
 	 * @return				the code on success, -1 for timeout, -2 for error
 	 */
-	private int getCode(int timeout_ms){
+	public int getCode(int timeout_ms){
 		int timeout = 0;
 		int ret_byte = -2;
 		
@@ -236,13 +179,12 @@ public class AsynConnectionThread extends Thread {
 		String response = "";
 		int timeout = 0;
 		
-		while(timeout<5000){
+		while(timeout<10000){
             try {
-                while(in.ready()){
-                    int tmp_char = in.read();
-                    String tmp_string = Character.toString((char) tmp_char);
-                    response += tmp_string;
-                    if("\n".equals(tmp_string)) return response.substring(0, response.length()-1);
+                while(in_data.available()>0){
+                	char a = in_data.readChar();
+                	response = response + a;
+                	if(a=='\n') return response.substring(0, response.length()-1);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -280,8 +222,9 @@ public class AsynConnectionThread extends Thread {
 	 * @param str			the string written	
 	 */
 	private void writeText(String str){
+		str = str + "\n";
         try {
-            out_data.writeChars(str + "\n");
+        	out_data.writeChars(str);
             out_data.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -291,26 +234,13 @@ public class AsynConnectionThread extends Thread {
     }
 	
 	/**
-	 * Generates a UID and sends it to the client
-	 * TODO rework with encryption
-	 */
-	private void register(){
-		
-		// TODO IMPLEMENT UID GENERATION
-		out.println("890fu8928f2893kat4g1q");
-		OSDepPrint.debug("successfully send UID to client", ref);
-		// TODO besserer check?
-		
-	}
-	
-	/**
 	 * Filters the next incoming code and starts the upload
 	 * of the requested map by calling 'sendFile'.
 	 * TODO implement a switch statement for the different file paths
 	 *  
 	 * @return	0 on success, -1 on invalid code, -2 on error
 	 */
-	private int map(){
+	public int map(){
 		
 		int mapcode = getCode(5000);
 		if(mapcode<=0){
@@ -340,7 +270,7 @@ public class AsynConnectionThread extends Thread {
 	 * 
 	 * @return	0 on success, -2 on error
 	 */
-	private int retry(){
+	public int retry(){
 		int timeout = 0;
 		long remainingBytes = -1;
 		while(timeout<5000){
@@ -449,7 +379,7 @@ public class AsynConnectionThread extends Thread {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			//e.printStackTrace();
-			OSDepPrint.error("(392) " + e.getMessage(), ref);
+			OSDepPrint.error("(320) " + e.getMessage(), ref);
 			OSDepPrint.printProgressStop();
 			return -1;
 		}
@@ -487,7 +417,7 @@ public class AsynConnectionThread extends Thread {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			OSDepPrint.error("(471) " + e.getMessage(), ref);
+			OSDepPrint.error("(399) " + e.getMessage(), ref);
 		}
 		
 		return -1;
@@ -512,12 +442,12 @@ public class AsynConnectionThread extends Thread {
 			if((time_needed>10000)||(time_needed<1)) time_needed = 100;
 			values = values + (time_needed/2) + ", ";
 			avg += time_needed;
+			sleep(100);
 		}
 		avg = (avg/5/2) - calculation_delay;
 		OSDepPrint.info("Average delay to client " + avg + "ms (" + values.substring(0, values.length()-2) + ", cd=25ms)", ref);
 		
 		return avg;
 	}
-	
 
 }

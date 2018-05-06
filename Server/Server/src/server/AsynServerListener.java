@@ -1,4 +1,4 @@
-package network;
+package server;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,6 +7,8 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import network.Cryptography;
 
 public class AsynServerListener extends Thread {
 	private ServerSocket server;
@@ -18,6 +20,7 @@ public class AsynServerListener extends Thread {
 
 		// Server initialisieren
 		try {
+			Cryptography.initialize();
 			server = new ServerSocket(port, 0, InetAddress.getByName("62.113.206.126")); //192.168.188.55 //62.113.206.126
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -38,7 +41,7 @@ public class AsynServerListener extends Thread {
 				newClient = client;												// ist das ne deep copy?
 				connCounter++;
 				System.out.println(" [ #" + connCounter + " ] " +  client.getInetAddress().toString().replace("/", "") + ":" + client.getLocalPort() + " connected");
-				AsynConnectionThread conn = new AsynConnectionThread(newClient, connCounter);
+				AsynConnectionAuthThread conn = new AsynConnectionAuthThread(newClient, connCounter);
 				conn.start();
 				
 				
