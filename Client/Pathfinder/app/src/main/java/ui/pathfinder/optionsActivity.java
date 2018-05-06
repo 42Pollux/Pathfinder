@@ -14,4 +14,9 @@ public class optionsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_options);
     }
+
+    public void superadmin(View view){
+        Intent startNewActivity = new Intent(this, superadminActivity.class);
+        startActivity(startNewActivity);
+    }
 }

@@ -1,6 +1,7 @@
 package network;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
@@ -16,8 +17,9 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class Cryptography {
-	private static KeyPair rsaKeys;
+	public static KeyPair rsaKeys; //only for testing public
 	private static SecretKey aesKey;
+	private static PublicKey server_public_key;
 	
 	// no key signing supported yet, AES keys or only encrypted once with RSA
 	// AES 256 requires optional JCE components
@@ -32,7 +34,7 @@ public class Cryptography {
 			keyGen.initialize(2048);
 			rsaKeys = keyGen.genKeyPair();
 			
-		} catch (NoSuchAlgorithmException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -43,6 +45,16 @@ public class Cryptography {
 	public static void setAesKey(SecretKey decrypted_key) {
 		aesKey = decrypted_key;
 	}
+	
+	public static void setServerPublicKey(String key){
+        try{
+
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(key)));
+            server_public_key = publicKey;
+        } catch (Exception e){
+
+        }
+    }
 	
 	public static String getRSAPublicKey() {
 		return Base64.getEncoder().encodeToString(rsaKeys.getPublic().getEncoded());
@@ -85,17 +97,14 @@ public class Cryptography {
 		return null;
 	}
 	
-	public static SecretKey encryptKeyRSA(byte[] server_public_key, SecretKey key) {
+	public static byte[] encryptKeyRSA(SecretKey key) {
 		Cipher c;
-		PublicKey client_key;
 		try {
-			c = Cipher.getInstance("RSA");
-			client_key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(server_public_key));
-			c.init(Cipher.ENCRYPT_MODE,  client_key);
+			c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			c.init(Cipher.ENCRYPT_MODE,  server_public_key);
 			byte[] key_bytes = c.doFinal(key.getEncoded());
 			
-			SecretKey encrypted_key = new SecretKeySpec(key_bytes, 0, key_bytes.length, "AES");
-			return encrypted_key;
+			return key_bytes;
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -107,8 +116,9 @@ public class Cryptography {
 	
 	public static SecretKey decryptKeyRSA(byte[] key) {
 		Cipher c;
+		OSDepPrint.debug("key length: " + key.length);
 		try {
-			c = Cipher.getInstance("RSA");
+			c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			c.init(Cipher.DECRYPT_MODE,  rsaKeys.getPrivate());
 			byte[] key_bytes = c.doFinal(key);
 			

@@ -6,6 +6,8 @@ package network;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
@@ -91,13 +93,16 @@ public class AsynConnectionThread extends Thread {
 			return -1;
 		} else {
 			// TODO save client public key for later
+			OSDepPrint.debug("[KEYEX] received client public key: " + client_public_key, ref);
 			writeText(Cryptography.getRSAPublicKey());
+			OSDepPrint.debug("[KEYEX] sending public key: " + Cryptography.getRSAPublicKey(), ref);
 		}
 		
 		String client_encrypted_aes_key = null;
 		if((client_encrypted_aes_key = getTextResponse())==null) {
 			return -1;
 		} else {
+			OSDepPrint.debug("[KEYEX] received client encrypted AES key: " + client_encrypted_aes_key, ref);
 			Cryptography.setAesKey(Cryptography.decryptKeyRSA(Base64.getDecoder().decode(client_encrypted_aes_key)));
 		}
 		
@@ -105,7 +110,9 @@ public class AsynConnectionThread extends Thread {
 		if((client_encrypted_uid = getTextResponse())==null) {
 			return -1;
 		} else {
+			OSDepPrint.debug("[KEYEX] received client encrypted UID", ref);
 			client_uid = Cryptography.decryptText(client_encrypted_uid);
+			OSDepPrint.debug("[KEYEX] Client UID: " + client_uid, ref);
 		}
 		
 		return 0;
@@ -245,13 +252,12 @@ public class AsynConnectionThread extends Thread {
 		String response = "";
 		int timeout = 0;
 		
-		while(timeout<5000){
+		while(timeout<10000){
             try {
-                while(in.ready()){
-                    int tmp_char = in.read();
-                    String tmp_string = Character.toString((char) tmp_char);
-                    response += tmp_string;
-                    if("\n".equals(tmp_string)) return response.substring(0, response.length()-1);
+                while(in_data.available()>0){
+                	char a = in_data.readChar();
+                	response = response + a;
+                	if(a=='\n') return response.substring(0, response.length()-1);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -289,8 +295,14 @@ public class AsynConnectionThread extends Thread {
 	 * @param str			the string written	
 	 */
 	private void writeText(String str){
+		str = str + "\n";
         try {
-            out_data.writeChars(str + "\n");
+//        	byte[] bytes = str.getBytes(StandardCharsets.US_ASCII);
+//        	for(int i = 0; i<bytes.length; i++) {
+//        		out_data.writeByte(bytes[i]);
+//        	}
+        	//out.write(str);
+        	out_data.writeChars(str);
             out_data.flush();
         } catch (IOException e) {
             e.printStackTrace();
