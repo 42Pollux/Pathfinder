@@ -51,10 +51,10 @@ class TEST_Cryptography {
 
 	@Test
 	void testEncryptDecryptText() {
-		fail("skipping");
-		String msg1 = Cryptography.encryptText("Hello World!", aesKey);
-		System.out.println(msg1);
+		//fail("skipping");
 		Cryptography.setAesKey(aesKey);
+		String msg1 = Cryptography.encryptText("Hello World!");
+		System.out.println(msg1);
 		String msg2 = Cryptography.decryptText(msg1);
 		System.out.println(msg2);
 		assertEquals(msg2, "Hello World!");
@@ -65,12 +65,12 @@ class TEST_Cryptography {
 		//fail("skipping");
 		// 1. client generates an RSA KeyPair and an AES Key, server already has RSA KeyPair
 		// 2. client encrypts AES Key with servers public key
-		Cryptography.setServerPublicKey(Base64.getEncoder().encodeToString(Cryptography.rsaKeys.getPublic().getEncoded()));
+		Cryptography.setServerPublicKey_base64Format(Cryptography.encodeBase64(Cryptography.rsa_keys.getPublic().getEncoded()));
 		System.out.println("aes key before: " + Base64.getEncoder().encodeToString(aesKey.getEncoded()));
-		byte[] encrypted_key = Cryptography.encryptKeyRSA(aesKey);
+		byte[] encrypted_key = Cryptography.encryptAESKeyWithRSA(aesKey);
 		System.out.println("aes key meanwhile: " + Base64.getEncoder().encodeToString(encrypted_key));
 		// 3. client sends encrypted AES key, server decrypts AES key
-		SecretKey decrypted_key = Cryptography.decryptKeyRSA(encrypted_key);
+		SecretKey decrypted_key = Cryptography.decryptAESKeyWithRSA(encrypted_key);
 		System.out.println("aes key after: " + Base64.getEncoder().encodeToString(decrypted_key.getEncoded()));
 		assertEquals(aesKey, decrypted_key);
 	}

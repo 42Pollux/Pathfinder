@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import android.content.Context;
 import android.support.v4.app.NotificationCompat.Builder;
@@ -79,7 +80,7 @@ class ThreadRequest implements Runnable {
     @Override
     public void run() {
 
-       if(initialize(false)<0){ return; }
+        if(initialize(false)<0){ return; }
 
 
         // exchange public keys
@@ -93,62 +94,62 @@ class ThreadRequest implements Runnable {
 
             // MAPS ##########
             case ConnectionCodes.MAP_B:     // Berlin
-                                            requestMap(ConnectionCodes.MAP_B);
-                                            break;
+                requestMap(ConnectionCodes.MAP_B);
+                break;
             case ConnectionCodes.MAP_BA:    // Bayern
-                                            requestMap(ConnectionCodes.MAP_BA);
-                                            break;
+                requestMap(ConnectionCodes.MAP_BA);
+                break;
             case ConnectionCodes.MAP_BR:    // Brandenburg
-                                            requestMap(ConnectionCodes.MAP_BR);
-                                            break;
+                requestMap(ConnectionCodes.MAP_BR);
+                break;
             case ConnectionCodes.MAP_BW:    // Baden-Württemberg
-                                            requestMap(ConnectionCodes.MAP_BW);
-                                            break;
+                requestMap(ConnectionCodes.MAP_BW);
+                break;
             case ConnectionCodes.MAP_HB:    // Bremen
-                                            requestMap(ConnectionCodes.MAP_HB);
-                                            break;
+                requestMap(ConnectionCodes.MAP_HB);
+                break;
             case ConnectionCodes.MAP_HH:    // Hamburg
-                                            requestMap(ConnectionCodes.MAP_HH);
-                                            break;
+                requestMap(ConnectionCodes.MAP_HH);
+                break;
             case ConnectionCodes.MAP_HS:    // Hessen
-                                            requestMap(ConnectionCodes.MAP_HS);
-                                            break;
+                requestMap(ConnectionCodes.MAP_HS);
+                break;
             case ConnectionCodes.MAP_MV:    // Mecklenburg-Vorpommern
-                                            requestMap(ConnectionCodes.MAP_MV);
-                                            break;
+                requestMap(ConnectionCodes.MAP_MV);
+                break;
             case ConnectionCodes.MAP_NRW:   // Nordrhein-Westpfahlen
-                                            requestMap(ConnectionCodes.MAP_NRW);
-                                            break;
+                requestMap(ConnectionCodes.MAP_NRW);
+                break;
             case ConnectionCodes.MAP_NS:    // Niedersachsen
-                                            requestMap(ConnectionCodes.MAP_NS);
-                                            break;
+                requestMap(ConnectionCodes.MAP_NS);
+                break;
             case ConnectionCodes.MAP_RP:    // Rheinland-Pfalz
-                                            requestMap(ConnectionCodes.MAP_RP);
-                                            break;
+                requestMap(ConnectionCodes.MAP_RP);
+                break;
             case ConnectionCodes.MAP_SA:    // Sachsen-Anhalt
-                                            requestMap(ConnectionCodes.MAP_SA);
-                                            break;
+                requestMap(ConnectionCodes.MAP_SA);
+                break;
             case ConnectionCodes.MAP_SH:    // Schleswig-Holstein
-                                            requestMap(ConnectionCodes.MAP_SH);
-                                            break;
+                requestMap(ConnectionCodes.MAP_SH);
+                break;
             case ConnectionCodes.MAP_SL:    // Saarland
-                                            requestMap(ConnectionCodes.MAP_SL);
-                                            break;
+                requestMap(ConnectionCodes.MAP_SL);
+                break;
             case ConnectionCodes.MAP_SS:    // Sachsen
-                                            requestMap(ConnectionCodes.MAP_SS);
-                                            break;
+                requestMap(ConnectionCodes.MAP_SS);
+                break;
             case ConnectionCodes.MAP_TH:    // Thüringen
-                                            requestMap(ConnectionCodes.MAP_TH);
-                                            break;
+                requestMap(ConnectionCodes.MAP_TH);
+                break;
             case ConnectionCodes.MAP_GER:   // Deutschland
-                                            requestMap(ConnectionCodes.MAP_GER);
-                                            break;
+                requestMap(ConnectionCodes.MAP_GER);
+                break;
 
             // COMMANDS ##########
             case ConnectionCodes.REGISTER:  break;
 
             case ConnectionCodes.MAPPART:   // Kartenausschnitt
-                                            break;
+                break;
         }
 
     }
@@ -206,8 +207,13 @@ class ThreadRequest implements Runnable {
     }
 
     /**
-     * Sends the public key to the server and waits for a response containing
-     * the servers public key.
+     * Performs the key exchange of the RSA public keys and the AES key.
+     * Current sequence of events:
+     * 1. Client sends his public key base64 encoded.
+     * 2. Server sends his public key base64 encoded.
+     * 3. Client sends the RSA encrypted and base64 encoded AES key (session key).
+     * 4. Client sends the AES encrypted and base64 encoded UID.
+     *
      * @return	0 on success, -1 on error
      */
     public int keyExchange() {
@@ -216,15 +222,18 @@ class ThreadRequest implements Runnable {
         Cryptography.initialize();
 
         // send the public key
-        writeText(Cryptography.getRSAPublicKey());
+        writeText(Cryptography.getRSAPublicKey_base64Format());
+        debug_log("Our Key: " + Cryptography.getRSAPublicKey_base64Format());
 
         // wait for the servers public key
         if((server_public_key = getTextResponse())==null) return -1;
-        Cryptography.setServerPublicKey(server_public_key);
+        Cryptography.setServerPublicKey_base64Format(server_public_key);
+        debug_log("Server Public Key: " + server_public_key);
 
         // encrypt the session key
         // send the session key
-        writeText(Cryptography.getAESEncryptedKey());
+        debug_log("Encrypted aes key: " + Cryptography.getAESEncryptedKey_base64Format());
+        writeText(Cryptography.getAESEncryptedKey_base64Format());
 
         // encrypt the uid
         encrypted_uid = Cryptography.encryptText("7fh87f4i7f7sfei3");
@@ -292,11 +301,10 @@ class ThreadRequest implements Runnable {
 
         while(timeout<5000){
             try {
-                while(in.ready()){
-                    int tmp_char = in.read();
-                    String tmp_string = Character.toString((char) tmp_char);
-                    response += tmp_string;
-                    if("\n".equals(tmp_string)) return response.substring(0, response.length()-1);
+                while(in_data.available()>0){
+                    char a = in_data.readChar();
+                    response = response + a;
+                    if(a=='\n') return response.substring(0, response.length()-1);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -355,8 +363,9 @@ class ThreadRequest implements Runnable {
      * @param str			the string written
      */
     private void writeText(String str){
+        str = str + "\n";
         try {
-            out_data.writeChars(str + "\n");
+            out_data.writeChars(str);
             out_data.flush();
         } catch (IOException e) {
             e.printStackTrace();

@@ -5,6 +5,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import android.util.Base64;
+import android.util.Log;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -22,6 +23,7 @@ public class Cryptography {
 
     // no key signing supported yet, AES keys or only encrypted once with RSA
     // AES 256 requires optional JCE components
+    // defaults may differ from phone to phone, check string encoding and key encoding
 
     public Cryptography() {
         // TODO Auto-generated constructor stub
@@ -45,25 +47,56 @@ public class Cryptography {
 
     }
 
-    public static void setServerPublicKey(String key){
+    /**
+     * Sets the server_public_key variable.
+     *
+     * @param key				base64 encoded public key as string
+     */
+    public static void setServerPublicKey_base64Format(String key){
         try{
 
-            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(Base64.decode(key, Base64.DEFAULT)));
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decodeBase64(key)));
             server_public_key = publicKey;
         } catch (Exception e){
 
         }
     }
 
-
-    public static String getRSAPublicKey() {
-        return Base64.encodeToString(rsa_keys.getPublic().getEncoded(), Base64.DEFAULT);
+    /**
+     * Gets the current RSA public key as base64 encoded string.
+     *
+     * @return					RSA public key as base64 string
+     */
+    public static String getRSAPublicKey_base64Format() {
+        return encodeBase64(rsa_keys.getPublic().getEncoded());
     }
 
-    public static String getAESEncryptedKey(){
-        return Base64.encodeToString(encryptKeyRSA(server_public_key.getEncoded(), aes_key).getEncoded(), Base64.DEFAULT);
+
+
+    // ##################################################################################
+    // client specific functions
+
+    /**
+     * Calls the required functions in order to encrypt the aes_key.
+     *
+     * @return                  encrypted AES key in base64 format
+     */
+    public static String getAESEncryptedKey_base64Format(){
+        return encodeBase64(encryptAESKeyWithRSA(aes_key));
     }
 
+
+
+    // ##################################################################################
+    // AES data encryption (curr: client and server encrypt/decrypt)
+
+    /**
+     * Encrypts the given string with AES and ecodes it in base64 format. The Cryptography
+     * class must be initialized in order for this function to work properly.
+     *
+     * @param text				string to be encrypted
+     * @return					encrypted base64 string
+     */
     public static String encryptText(String text) {
         Cipher c;
         try {
@@ -71,7 +104,7 @@ public class Cryptography {
             c.init(Cipher.ENCRYPT_MODE, aes_key, new IvParameterSpec(new byte[16]));
 
             byte[] encrypted_text_as_bytes = c.doFinal(text.getBytes("UTF8"));
-            String encrypted_text = Base64.encodeToString(encrypted_text_as_bytes, Base64.DEFAULT);
+            String encrypted_text = encodeBase64(encrypted_text_as_bytes);
 
             return encrypted_text;
         } catch (Exception e) {
@@ -82,6 +115,14 @@ public class Cryptography {
         return null;
     }
 
+    /**
+     * Decrypts the given base64 encoded string with AES back into plaintext (no
+     * defaults set so far). The Cryptography class must be initialized in order
+     * for this function to work properly.
+     *
+     * @param text				base64 string to be decrypted
+     * @return					decrypted string
+     */
     public static String decryptText(String text) {
         Cipher c;
         try {
@@ -89,7 +130,7 @@ public class Cryptography {
             c = Cipher.getInstance("AES/CBC/PKCS5Padding");
             c.init(Cipher.DECRYPT_MODE, aes_key, new IvParameterSpec(new byte[16]));
 
-            byte[] decrypted_text_as_bytes = c.doFinal(Base64.decode(text, Base64.DEFAULT));
+            byte[] decrypted_text_as_bytes = c.doFinal(decodeBase64(text));
             String decrypted_text = new String(decrypted_text_as_bytes);
 
             return decrypted_text;
@@ -101,35 +142,27 @@ public class Cryptography {
         return null;
     }
 
-    public static SecretKey encryptKeyRSA(byte[] server_public_key, SecretKey key) {
+
+
+    // ##################################################################################
+    // RSA key encryption (curr: client encrypts, server decrypts)
+
+    /**
+     * Encrypts an AES key given as SecretKey Object with RSA. The public
+     * key of the server must be set for this function to work properly.
+     *
+     * @param key				AES key as SecretKey object
+     * @return					encrypted AES key as byte-array
+     */
+    public static byte[] encryptAESKeyWithRSA(SecretKey key) {
         Cipher c;
-        PublicKey client_key;
         try {
-            c = Cipher.getInstance("RSA");
-            client_key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(server_public_key));
-            c.init(Cipher.ENCRYPT_MODE,  client_key);
+            c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            c.init(Cipher.ENCRYPT_MODE,  server_public_key);
             byte[] key_bytes = c.doFinal(key.getEncoded());
 
-            SecretKey encrypted_key = new SecretKeySpec(key_bytes, 0, key_bytes.length, "AES");
-            return encrypted_key;
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    public static SecretKey decryptKeyRSA(byte[] key) {
-        Cipher c;
-        try {
-            c = Cipher.getInstance("RSA");
-            c.init(Cipher.DECRYPT_MODE,  rsa_keys.getPrivate());
-            byte[] key_bytes = c.doFinal(key);
-
-            SecretKey decrypted_key = new SecretKeySpec(key_bytes, 0, key_bytes.length, "AES");
-            return decrypted_key;
+            Log.d("DEBUG1", "key length: " + key_bytes.length);
+            return key_bytes;
 
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -141,54 +174,29 @@ public class Cryptography {
 
 
 
-    // Example of RSA key encryption with key signing
+    // ##################################################################################
+    // Base64 encode/decode functions, platform specific
 
-//	public static SecretKey encryptKeyRSA(byte[] server_public_key, SecretKey key) {
-//		Cipher c;
-//		PublicKey client_key;
-//		try {
-//			c = Cipher.getInstance("RSA");
-//			c.init(Cipher.ENCRYPT_MODE,  rsaKeys.getPrivate());
-//			client_key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(server_public_key));
-//			byte[] keyEncryptedOnce = c.doFinal(key.getEncoded());
-//			c.init(Cipher.ENCRYPT_MODE,  client_key);
-//			byte[] keyEncryptedTwice = c.doFinal(keyEncryptedOnce);
+    /**
+     * Encodes a byte-array into a base64 string
+     *
+     * @param bytes				byte-array to encode
+     * @return					base64 string
+     */
+    public static String encodeBase64(byte[] bytes) {
+        return Base64.encodeToString(bytes, Base64.NO_WRAP);
+    }
 
-//			SecretKey encrypted_key = new SecretKeySpec(keyEncryptedTwice, 0, keyEncryptedTwice.length, "AES");
-//			return encrypted_key;
-//
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-//		return null;
-//	}
-//
-//	public static SecretKey decryptKeyRSA(byte[] client_public_key, byte[] key) {
-//		Cipher c;
-//		PublicKey client_key;
-//		try {
-//			c = Cipher.getInstance("RSA");
-//			c.init(Cipher.DECRYPT_MODE,  rsaKeys.getPrivate());
-//			client_key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(client_public_key));
-//
-//			byte[] keyDecryptedOnce = c.doFinal(key);
-//			c.init(Cipher.DECRYPT_MODE,  client_key);
-//			byte[] keyDecryptedTwice = c.doFinal(keyDecryptedOnce);
-//
-//			SecretKey decrypted_key = new SecretKeySpec(keyDecryptedTwice, 0, keyDecryptedTwice.length, "AES");
-//			return decrypted_key;
-//
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-//		return null;
-//	}
+    /**
+     * Decodes a base64 string into a byte-array
+     *
+     * @param str				base64 string
+     * @return					decoded byte-array
+     */
+    public static byte[] decodeBase64(String str) {
+        return Base64.decode(str, Base64.NO_WRAP);
+    }
 
 
 
 }
-
