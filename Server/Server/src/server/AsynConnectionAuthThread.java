@@ -11,6 +11,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
+import exceptions.ConnectionTimeoutException;
+import exceptions.ConnectionUnexpectedlyClosedException;
+import exceptions.ProtocolErrorException;
+import helper.OSDepPrint;
 import network.ConnectionCodes;
 import network.Cryptography;
 import network.Connector;
@@ -20,7 +24,6 @@ import network.Connector;
 
 public class AsynConnectionAuthThread extends Thread {
 	private int ref = 0;
-	private String client_uid = null;
 	
 	private Connector conn;
 	
@@ -49,38 +52,39 @@ public class AsynConnectionAuthThread extends Thread {
 	public void run(){
 		
 		// exchange public keys
-		if(conn.keyExchange()<0) {
+		String client_uid = null;
+		try {
+			client_uid = conn.keyExchange();
+		} catch (ConnectionTimeoutException | ConnectionUnexpectedlyClosedException e) {
 			OSDepPrint.error("Client failed to authenticate", ref);
 			return;
 		}
 		
-		// decrypt uid
-		// TODO implement
-		
-		// validate uid
+		// validate client_uid
 		// TODO implement
 		
 		// process request
-		int response = conn.getCode(5000);
-		if(response >= 1){
+		int response;
+		try {
+			response = conn.getCode(5000);
 			switch(response){
 	        case ConnectionCodes.REQUEST: 	request();
 											return;
 	        }
-		} else if(response==-2){
-			OSDepPrint.error("Exception occurred", ref);
-		} else {
-			OSDepPrint.error("No response within time limit", ref);
-		}
-		
+		} catch (Exception e) {
+			return;
+		} 
 	}
 	
 	/**
 	 * Filters the next incoming code and calls the corresponding function.
 	 * Performs a disconnect after the called functions finish.
+	 * @throws ProtocolErrorException 
+	 * @throws ConnectionUnexpectedlyClosedException 
+	 * @throws ConnectionTimeoutException 
 	 * 
 	 */
-	private void request(){
+	private void request() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException{
 		switch(conn.getCode(5000)){
 		case ConnectionCodes.REGISTER:	OSDepPrint.net("UID requested", ref);
 										register();
