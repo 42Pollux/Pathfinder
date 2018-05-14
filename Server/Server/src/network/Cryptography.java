@@ -16,20 +16,19 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import server.OSDepPrint;
+import helper.OSDepPrint;
 
 public class Cryptography {
-	public static KeyPair rsa_keys; //only for testing public
-	private static SecretKey aes_key;
-	private static PublicKey server_public_key;
+	private static KeyPair rsa_keys;
+	private SecretKey aes_key;
 	
 	// no key signing supported yet, AES keys or only encrypted once with RSA
 	// AES 256 requires optional JCE components
 	// defaults may differ from phone to phone, check string encoding and key encoding
-	// Cryptography must be an object at least for server code
+	// initial vectory must be different each time and not zero all the time
 	
 	public Cryptography() {
-		// TODO Auto-generated constructor stub
+		
 	}
 	
 	public static void initialize() {
@@ -46,26 +45,11 @@ public class Cryptography {
 	}
 	
 	/**
-	 * Sets the server_public_key variable.
-	 * 
-	 * @param key				base64 encoded public key as string  
-	 */
-	public static void setServerPublicKey_base64Format(String key){
-        try{
-
-            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(key)));
-            server_public_key = publicKey;
-        } catch (Exception e){
-
-        }
-    }
-	
-	/**
 	 * Gets the current RSA public key as base64 encoded string.
 	 *
 	 * @return					RSA public key as base64 string
 	 */
-	public static String getRSAPublicKey_base64Format() {
+	public String getRSAPublicKey_base64Format() {
         return encodeBase64(rsa_keys.getPublic().getEncoded());
     }
 	
@@ -79,10 +63,10 @@ public class Cryptography {
 	 * 
 	 * @param decrypted_key		decrypted key as SecretKey object
 	 */
-	public static void setAesKey(SecretKey decrypted_key) {
-		aes_key = decrypted_key;
+	public void setAESKey(SecretKey decrypted_key) {
+		this.aes_key = decrypted_key;
 	}
-	
+
 	
 	
 	// ##################################################################################
@@ -95,11 +79,11 @@ public class Cryptography {
 	 * @param text				string to be encrypted
 	 * @return					encrypted base64 string
 	 */
-	public static String encryptText(String text) {
+	public String encryptText(String text) {
 		Cipher c;
 		try {
 			c = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			c.init(Cipher.ENCRYPT_MODE, aes_key, new IvParameterSpec(new byte[16]));
+			c.init(Cipher.ENCRYPT_MODE, this.aes_key, new IvParameterSpec(new byte[16]));
 			
 			byte[] encrypted_text_as_bytes = c.doFinal(text.getBytes("UTF8"));
 			String encrypted_text = encodeBase64(encrypted_text_as_bytes);
@@ -121,12 +105,12 @@ public class Cryptography {
 	 * @param text				base64 string to be decrypted
 	 * @return					decrypted string
 	 */
-	public static String decryptText(String text) {
+	public String decryptText(String text) {
 		Cipher c;
 		try {
 			
 			c = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			c.init(Cipher.DECRYPT_MODE, aes_key, new IvParameterSpec(new byte[16]));
+			c.init(Cipher.DECRYPT_MODE, this.aes_key, new IvParameterSpec(new byte[16]));
 			
 			byte[] decrypted_text_as_bytes = c.doFinal(decodeBase64(text));
 			String decrypted_text = new String(decrypted_text_as_bytes);
@@ -152,9 +136,9 @@ public class Cryptography {
 	 * @param key				an RSA encrypted AES key
 	 * @return					decrypted AES key as SecretKey object
 	 */
-	public static SecretKey decryptAESKeyWithRSA(byte[] key) {
+	public SecretKey decryptAESKeyWithRSA(byte[] key) {
 		Cipher c;
-		OSDepPrint.debug("key length: " + key.length);
+		//OSDepPrint.debug("key length: " + key.length);
 		try {
 			c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			c.init(Cipher.DECRYPT_MODE,  rsa_keys.getPrivate());
@@ -182,7 +166,7 @@ public class Cryptography {
 	 * @param bytes				byte-array to encode
 	 * @return					base64 string
 	 */
-	public static String encodeBase64(byte[] bytes) {
+	public String encodeBase64(byte[] bytes) {
 		return Base64.getEncoder().encodeToString(bytes);
 	}
 	
@@ -192,7 +176,7 @@ public class Cryptography {
 	 * @param str				base64 string
 	 * @return					decoded byte-array
 	 */
-	public static byte[] decodeBase64(String str) {
+	public byte[] decodeBase64(String str) {
 		return Base64.getDecoder().decode(str);
 	}
 	

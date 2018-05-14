@@ -14,7 +14,10 @@ import java.net.Socket;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
-import server.OSDepPrint;
+import exceptions.ConnectionTimeoutException;
+import exceptions.ConnectionUnexpectedlyClosedException;
+import exceptions.ProtocolErrorException;
+import helper.OSDepPrint;
 
 public class Connector {
 	private Socket client;
@@ -26,6 +29,7 @@ public class Connector {
 	private int package_delay = 50;
 	private int ref = 0;
 	private String client_uid = null;
+	private Cryptography crypt = null;
 
 	public Connector(Socket _client, int _ref) {
 		client = _client;
@@ -36,6 +40,8 @@ public class Connector {
 			
 			out_data = new DataOutputStream(new BufferedOutputStream(_client.getOutputStream()));
 			in_data = new DataInputStream(new BufferedInputStream(_client.getInputStream()));
+			
+			crypt = new Cryptography();
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -52,37 +58,29 @@ public class Connector {
 	 * 3. Client sends the RSA encrypted and base64 encoded AES key (session key).
 	 * 4. Client sends the AES encrypted and base64 encoded UID.
 	 * 
-	 * @return	0 on success, -1 on error
+	 * @return UID as string on success, null on error
+	 * @throws ConnectionTimeoutException
+	 * @throws ConnectionUnexpectedlyClosedException 
 	 */
-	public int keyExchange() {
-		String client_public_key = null;
-		if((client_public_key = getTextResponse())==null) {
-			return -1;
-		} else {
-			// TODO save client public key for later
-			OSDepPrint.debug("[KEYEX] received client public key: " + client_public_key, ref);
-			writeText(Cryptography.getRSAPublicKey_base64Format());
-			OSDepPrint.debug("[KEYEX] sending public key: " + Cryptography.getRSAPublicKey_base64Format(), ref);
-		}
+	public String keyExchange() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException{
+		String client_public_key = getTextResponse();
+		// TODO save client public key for later
+		OSDepPrint.debug("[KEYEX] received client public key: " + client_public_key, ref);
+		writeText(crypt.getRSAPublicKey_base64Format());
+		OSDepPrint.debug("[KEYEX] sending public key: " + crypt.getRSAPublicKey_base64Format(), ref);
+
 		
-		String client_encrypted_aes_key = null;
-		if((client_encrypted_aes_key = getTextResponse())==null) {
-			return -1;
-		} else {
-			OSDepPrint.debug("[KEYEX] received client encrypted AES key: " + client_encrypted_aes_key, ref);
-			Cryptography.setAesKey(Cryptography.decryptAESKeyWithRSA(Base64.getDecoder().decode(client_encrypted_aes_key)));
-		}
+		String client_encrypted_aes_key = getTextResponse();
+		OSDepPrint.debug("[KEYEX] received client encrypted AES key: " + client_encrypted_aes_key, ref);
+		crypt.setAESKey(crypt.decryptAESKeyWithRSA(Base64.getDecoder().decode(client_encrypted_aes_key)));
+
 		
-		String client_encrypted_uid = null;
-		if((client_encrypted_uid = getTextResponse())==null) {
-			return -1;
-		} else {
-			OSDepPrint.debug("[KEYEX] received client encrypted UID", ref);
-			client_uid = Cryptography.decryptText(client_encrypted_uid);
-			OSDepPrint.debug("[KEYEX] Client UID: " + client_uid, ref);
-		}
-		
-		return 0;
+		String client_encrypted_uid = getTextResponse();
+		OSDepPrint.debug("[KEYEX] received client encrypted UID", ref);
+		client_uid = crypt.decryptText(client_encrypted_uid);
+		OSDepPrint.debug("[KEYEX] Client UID: " + client_uid, ref);
+
+		return client_uid;
 	}
 	
 	/**
@@ -90,7 +88,7 @@ public class Connector {
 	 * If the operation fails we assume that the connection has
 	 * already been closed by the client.
 	 * 
-	 * @return	0 for success or -1 if the client is already disconnected
+	 * @return 0 for success or -1 if the client is already disconnected
 	 */
 	public int disconnect(){
 		try {
@@ -134,6 +132,14 @@ public class Connector {
         }
 	}
 	
+	/** Get the current line number.
+	 * 
+	 *  @return Current line number.
+	 */
+	public static int getLineNumber() {
+	    return Thread.currentThread().getStackTrace()[2].getLineNumber();
+	}
+	
 	/**
 	 * Waits a certain amount of time for a response from the 
 	 * connected client. The response should be in form of a code
@@ -141,11 +147,11 @@ public class Connector {
 	 * terminated by the END-sequence.
 	 * 
 	 * @param timeout_ms	time we wait for the response in milliseconds
-	 * @return				the code on success, -1 for timeout, -2 for error
+	 * @return				the received code
 	 */
-	public int getCode(int timeout_ms){
+	public int getCode(int timeout_ms) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException {
 		int timeout = 0;
-		int ret_byte = -2;
+		int ret_byte = 0;
 		
 		while(timeout<timeout_ms){
             try {
@@ -157,25 +163,25 @@ public class Connector {
                     
                 }
             } catch (IOException e) {
-                e.printStackTrace();
-                // TODO Fehlerbehandlung
-                return -2;
+            	// Assuming IOException is only thrown for "Stream closed" 
+            	throw new ConnectionUnexpectedlyClosedException(getLineNumber() + ", getCode", ref);
             }
-
             sleep(10);
             timeout += 10;
 
         }
-		return -1;
+		throw new ConnectionTimeoutException(getLineNumber() + ", getCode", ref);
 	}
 	
 	/**
 	 * Reads in all characters from the current stream until the 
 	 * new line character appears.
 	 * 
-	 * @return				Text response as string.
+	 * @return Text response as string.
+	 * @throws ConnectionTimeoutException
+	 * @throws ConnectionUnexpectedlyClosedException
 	 */
-	private String getTextResponse(){
+	private String getTextResponse() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException{
 		String response = "";
 		int timeout = 0;
 		
@@ -187,16 +193,15 @@ public class Connector {
                 	if(a=='\n') return response.substring(0, response.length()-1);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
-                // TODO Fehlerbehandlung
-                return null;
+            	// Assuming IOException is only thrown for "Stream closed" 
+            	throw new ConnectionUnexpectedlyClosedException(getLineNumber() + ", getTextResponse", ref);
             }
 
             sleep(10);
             timeout += 10;
 
         }
-		return null;
+		throw new ConnectionTimeoutException(getLineNumber() + ", getTextResponse", ref);
 	}
 	
 	/**
@@ -210,8 +215,7 @@ public class Connector {
             out_data.write(ConnectionCodes.END);
             out_data.flush();
         } catch (IOException e) {
-            e.printStackTrace();
-            // TODO Fehlerbehandlung
+        	OSDepPrint.error(e.getMessage(), ref);
         }
 
     }
@@ -227,8 +231,7 @@ public class Connector {
         	out_data.writeChars(str);
             out_data.flush();
         } catch (IOException e) {
-            e.printStackTrace();
-            // TODO Fehlerbehandlung
+            OSDepPrint.error(e.getMessage(), ref);
         }
 
     }
@@ -238,27 +241,28 @@ public class Connector {
 	 * of the requested map by calling 'sendFile'.
 	 * TODO implement a switch statement for the different file paths
 	 *  
-	 * @return	0 on success, -1 on invalid code, -2 on error
+	 * @throws ConnectionUnexpectedlyClosedException 
+	 * @throws ConnectionTimeoutException 
+	 * @throws ProtocolErrorException 
 	 */
-	public int map(){
+	public void map() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException{
 		
 		int mapcode = getCode(5000);
-		if(mapcode<=0){
-			// TODO Fehlerbehandlung
-			return -1;
-		}
+
 		OSDepPrint.net("Map requested (" + mapcode + ")", ref);
 		
 		// calculate average package delay
 		package_delay = calcAvgDelay();
 		
-		if(sendFile("/home/michael/pathfinder/video.mp4", 0)<0){
+		try {
+			sendFile("/home/michael/pathfinder/video.mp4", 0);
+		} catch (ConnectionTimeoutException | ConnectionUnexpectedlyClosedException e) {
 			OSDepPrint.error("File transfer incomplete", ref);
-			return -2;
+			return;
 		}
 		OSDepPrint.net("Map successfully uploaded", ref);
 		
-		return 0;
+		return;
 	}
 	
 	/**
@@ -268,9 +272,12 @@ public class Connector {
 	 * then waits to receive the map code. It then starts
 	 * the upload of the requested map by calling 'sendFile'.
 	 * 
-	 * @return	0 on success, -2 on error
+	 * @throws ProtocolErrorException 
+	 * @throws ConnectionUnexpectedlyClosedException 
+	 * @throws ConnectionTimeoutException 
+	 * @throws ProtocolErrorException
 	 */
-	public int retry(){
+	public void retry() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException {
 		int timeout = 0;
 		long remainingBytes = -1;
 		while(timeout<5000){
@@ -280,32 +287,32 @@ public class Connector {
                     remainingBytes = tmp_byte;
                     tmp_byte = in_data.read();
                     if(tmp_byte!=ConnectionCodes.END){																	// TODO check if integer long comp works
-                    	remainingBytes = -2;
+                    	throw new ProtocolErrorException(getLineNumber() + ", retry", ref);
                     }
                     timeout = 5000;
                     break;
                 }
             } catch (IOException e) {
-                e.printStackTrace();
-                // TODO Fehlerbehandlung
-                return -2;
+            	// Assuming IOException is only thrown for "Stream closed" 
+            	throw new ConnectionUnexpectedlyClosedException(getLineNumber() + ", retry", ref);
             }
 
             if(timeout<5000) sleep(250);
             timeout += 250;
 
         }
-		if(remainingBytes<0) return -2;
 		
 		int code = getCode(5000);
 		// TODO implement switch statement
-		if(sendFile("/home/michael/pathfinder/video.mp4", remainingBytes)<0){
+		try {
+			sendFile("/home/michael/pathfinder/video.mp4", remainingBytes);
+		} catch (ConnectionTimeoutException | ConnectionUnexpectedlyClosedException e) {
 			OSDepPrint.error("File transfer incomplete", ref);
-			return -2;
+			return;
 		}
 		OSDepPrint.net("Map successfully reuploaded", ref);
 		
-        return 0;
+        return;
 	}
 	
 	/**
@@ -315,9 +322,11 @@ public class Connector {
 	 * 
 	 * @param filepath			path to the file that should be sent
 	 * @param remainingBytes	bytes remaining for the client (for retries)
-	 * @return					0 on success, -1 on error
+	 * @throws ConnectionUnexpectedlyClosedException 
+	 * @throws ConnectionTimeoutException 
+	 * @throws ProtocolErrorException 
 	 */
-	private int sendFile(String filepath, long remainingBytes){
+	private void sendFile(String filepath, long remainingBytes) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException{
 		int curr = 0;
 		long progress = 0;
 		File filedata = new File(filepath);
@@ -332,8 +341,8 @@ public class Connector {
 			OSDepPrint.debug("filesize: " + fileSize, ref);
 			out_data.write(ConnectionCodes.END);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// Assuming IOException is only thrown for "Stream closed" 
+        	throw new ConnectionUnexpectedlyClosedException(getLineNumber() + ", sendFile", ref);
 		}
 		
 		// send many 1mb packages
@@ -360,12 +369,6 @@ public class Connector {
 					break;
 				}
 				long seconds = sendCustomPackage(buffer, (int)offset, curr, timeout);
-				if(seconds<0){
-					out_data.close();
-					in_file.close();
-					OSDepPrint.printProgressStop();
-					return -1;
-				}
 				dlspeed = 2048.0f/((float)seconds/1000.0f);
 
 				
@@ -377,14 +380,12 @@ public class Connector {
 			in_file.close();
 			OSDepPrint.printProgress(progress, fileSize-remainingBytes, dlspeed, ref);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-			OSDepPrint.error("(320) " + e.getMessage(), ref);
 			OSDepPrint.printProgressStop();
-			return -1;
+			// Assuming IOException is only thrown for "Stream closed" 
+        	throw new ConnectionUnexpectedlyClosedException(getLineNumber() + ", sendFile", ref);
 		}
 		OSDepPrint.printProgressStop();
-		return 0;
+		return;
 	}	
 	
 	/**
@@ -395,32 +396,35 @@ public class Connector {
 	 * @param packageSize		amount of bytes the function should write
 	 * @param delay				DEPRECATED
 	 * @return					time needed by the client to receive the file in milliseconds, -1 on error
+	 * @throws ConnectionUnexpectedlyClosedException 
+	 * @throws ConnectionTimeoutException 
+	 * @throws ProtocolErrorException 
 	 */
-	private long sendCustomPackage(byte[] bytePackage, int offset, int packageSize, int delay) {
+	private long sendCustomPackage(byte[] bytePackage, int offset, int packageSize, int delay) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException {
 		try {
 			long time_start = System.nanoTime();
 
 			// send the packet
+			// TODO write is probably blocking if client can't receive fast enough, "nio"?
 			out_data.write(bytePackage, offset, packageSize-offset);
 			out_data.flush();
 			
 			
 			// receive the time needed by the client (initial timeout of 130 seconds)
-			// 128 seconds are needed to transmit 1 MB of data with 64KBit/s
-			// 64KBit/s is the lowest acceptable bandwidth
+			// 260 seconds are needed to transmit 2 MB of data with 64KBit/s
+			// 64KBit/s is the lowest acceptable bandwidth 
 			if(getCode(delay)==ConnectionCodes.ACK){
 				long time_needed = (System.nanoTime() - time_start);
 				//OSDepPrint.debug("Time needed: " + ((time_needed/1000000) - calculation_delay - 2*package_delay), ref);
 				return (time_needed/1000000) - calculation_delay - 2*package_delay;
 			} else {
-				return -1;
+				// We should never get in here, however just to be sure let's put something here
+				throw new ProtocolErrorException(getLineNumber() + ", sendCustomPackage, massive misbehaviour", ref);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
-			OSDepPrint.error("(399) " + e.getMessage(), ref);
+			// Assuming IOException is only thrown for "Stream closed" 
+        	throw new ConnectionUnexpectedlyClosedException(getLineNumber() + ", sendCustomPackage", ref);
 		}
-		
-		return -1;
 	}
 	
 	/**
@@ -428,8 +432,10 @@ public class Connector {
 	 * server to client and opposite. Five 'pings' are being sent to the client.
 	 * 
 	 * @return	the average delay in milliseconds
+	 * @throws ConnectionUnexpectedlyClosedException 
+	 * @throws ConnectionTimeoutException 
 	 */
-	private int calcAvgDelay() {
+	private int calcAvgDelay() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException {
 		int avg = 0;
 		String values = "";
 		
@@ -442,7 +448,7 @@ public class Connector {
 			if((time_needed>10000)||(time_needed<1)) time_needed = 100;
 			values = values + (time_needed/2) + ", ";
 			avg += time_needed;
-			sleep(100);
+			sleep(200);
 		}
 		avg = (avg/5/2) - calculation_delay;
 		OSDepPrint.info("Average delay to client " + avg + "ms (" + values.substring(0, values.length()-2) + ", cd=25ms)", ref);
