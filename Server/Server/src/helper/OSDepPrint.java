@@ -4,12 +4,20 @@ public class OSDepPrint {
 
 	private static boolean is_windows = false;
 	private static boolean is_debug = false;
+	private static boolean show_pbar = false;
 	
-	public static void init(boolean debug){
+	public static void initialize(){
 		if(System.getProperty("os.name").contains("Windows")) {
 			is_windows = true;
 		}
-		if(debug) is_debug = true;
+	}
+	
+	public static void setDebug(boolean debug) {
+		is_debug = debug;
+	}
+	
+	public static void setPBar(boolean pbar) {
+		show_pbar = pbar;
 	}
 	
 	public static void error(String msg){
@@ -81,7 +89,7 @@ public class OSDepPrint {
 	}
 	
 	public static void printProgress(long current, long maximum, float dlspeed, int ref){
-		if(is_debug){
+		if(show_pbar){
 			long step = maximum/40;
 			if(step<1) step = 1;
 			String line = "";
@@ -103,6 +111,8 @@ public class OSDepPrint {
 	}
 	
 	public static void printProgressStop(){
-		System.out.printf("\n");
+		if(show_pbar) {
+			System.out.printf("\n");
+		}
 	}
 }
