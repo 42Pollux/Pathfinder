@@ -1,18 +1,31 @@
+/**
+ * @author pollux
+ *
+ */
 package network;
 
 public class ConnectionCodes {
-    public static final String serverIP = "192.168.188.55";
+	public static final String serverIP = "62.113.206.126"; // "192.168.188.55";
     public static final int port = 55555;
-    public static final byte BEGIN = 1;  	//deprecated
-    public static final byte END = 18;
-    public static final byte REGISTER = 15;	// dec 10 -> grey code -> dec 15
-    public static final byte REQUEST = 20;	// dec 10, 13 = \n\r
-    public static final byte MAPPART = 25;
-    public static final byte RETRY = 30;    // wiederaufnahme von downloads
-    public static final byte ACK = 40;    // eine bestätigung nach dem erhalt eines CustomPackages
-    public static final byte PING = 50;    // ein ping packet
-    
-    public static final byte MAP = 100;		// general request code for maps
+
+    // connection control commands
+    public static final byte REQUEST = 10;  // a simple request
+    public static final byte END = 11;      // terminating sequence of our byte streams
+    public static final byte RETRY = 12;    // retry of downloads
+    public static final byte ACK = 13;      // acknowleding packages
+    public static final byte PING = 14;     // ping package
+    public static final byte MAP = 15;		// request a map
+
+    // codes used in the request method of Connector class
+    public static final byte REGISTER = 20; // register a new uid
+    public static final byte SECTOR = 21;   // a part of a map
+    public static final byte XML = 22;      // request an xml
+    public static final byte IMAGE = 23;    // request a ressource image
+    public static final byte TEXT = 24;     // request a ressource text file
+    public static final byte PATH = 25;     // request a pathing calculation
+    public static final byte OBJECT = 26;   // request a custom object
+
+    // specific map codes used in the request method
     public static final byte MAP_MV = 101;	// Mecklenburg-Vorpommern
     public static final byte MAP_SH = 102;	// Schleswig-Holstein
     public static final byte MAP_NS = 103;	// Niedersachsen
@@ -30,6 +43,11 @@ public class ConnectionCodes {
     public static final byte MAP_BW = 115;	// Baden-Württemberg
     public static final byte MAP_BA = 116;	// Bayern
     public static final byte MAP_GER = 117;	// Deutschland, komplett
-    
+
+    // Error texts
+    public static final String ERR_TIMEOUT = "Connection timed out";
+    public static final String ERR_CONLOST = "Connection lost";
+    public static final String ERR_PROTO = "Stream out of sync";
+
     // TODO bessere Werte
 }

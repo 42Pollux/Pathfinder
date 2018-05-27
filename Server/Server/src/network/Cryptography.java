@@ -1,3 +1,7 @@
+/**
+ * @author pollux
+ *
+ */
 package network;
 
 import java.io.UnsupportedEncodingException;
