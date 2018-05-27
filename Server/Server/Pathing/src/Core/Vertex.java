@@ -1,17 +1,17 @@
 package Core;
 import java.util.*;
 
-public class Vertex {
+public class Vertex <T>{
 	public int ID ;				// id in a graph. the number comes from the graph, this vertex is part of
-	public Object Storage;		// to store something
+	public T Storage;		// to store something
 	public String Name;			//a human-readable name
-	public LinkedList<Edge> AdjacentEdges; //save the adjacenting edges to this vertex
+	protected LinkedList<Edge<T>> AdjacentEdges; //save the adjacent edges to this vertex
 	
-	public Vertex(String name, Object storage)
+	public Vertex(String name, T storage)
 	{
 		this.Storage = storage;
 		this.Name = name;
-		this.AdjacentEdges = new LinkedList<Edge>();
+		this.AdjacentEdges = new LinkedList<Edge<T>>();
 	}
 	
 	public int getDegree(){
@@ -33,11 +33,35 @@ public class Vertex {
 	public int getOutDegree()
 	{
 		int result = 0;
-		for(Edge e: AdjacentEdges)
+		for(Edge<T> e: AdjacentEdges)
 		{
 			if(e.U == this)
 				result ++;
 		}
 		return result;
+	}
+	
+	/**@return a list of vertices which are adjacent to this vertex**/
+	public LinkedList<Vertex<T>> getAdjacentVertices ()
+	{
+		LinkedList<Vertex<T>> result = new LinkedList<Vertex<T>>();
+		for(Edge<T> edge: AdjacentEdges)
+		{
+			if(edge.U == this)
+			{
+				result.add(edge.V);
+				continue;
+			}
+			else
+			{
+				result.add(edge.U);
+			}			
+		}
+		return result;
+	}
+	
+	public LinkedList<Edge<T>> getEdges()
+	{
+		return this.AdjacentEdges;		
 	}
 }

@@ -1,14 +1,14 @@
 package Core;
 import ErrorHandling.PathingException;
 
-public class Edge {
-	public Vertex U;
-	public Vertex V;
+public class Edge<T> {
+	public Vertex<T> U;
+	public Vertex<T> V;
 	public String Name;
 	public int Weight;
 	public int ID;
 	
-	public Edge(Vertex u, Vertex v, String name, int weight) throws PathingException
+	public Edge(Vertex<T> u, Vertex<T> v, String name, int weight) throws PathingException
 	{
 		if(u == v)
 		{			

@@ -2,18 +2,18 @@ package Core;
 import java.util.*;
 
 
-public class UndirectedGraph extends Graph {
+public class UndirectedGraph <T> extends Graph <T> {
 
 	protected UndirectedGraph(){}
 	
-	public UndirectedGraph(LinkedList<Vertex> vertices, LinkedList<Edge> edges){
-		this.vertices = new LinkedList<Vertex>();
-		this.edges = new LinkedList<Edge>();
+	public UndirectedGraph (LinkedList<Vertex<T>> vertices, LinkedList<Edge<T>> edges){
+		this.vertices = new LinkedList<Vertex<T>>();
+		this.edges = new LinkedList<Edge<T>>();
 		
 		this.insertEdges(edges);
 		this.insertVertices(vertices);
 		
-		for(Edge e:this.edges)
+		for(Edge<T> e:this.edges)
 		{
 			e.U.AdjacentEdges.add(e);
 			e.V.AdjacentEdges.add(e);
@@ -29,12 +29,12 @@ public class UndirectedGraph extends Graph {
 		return result;		
 	}*/
 		
-	@Override public LinkedList<Vertex> areReachable(Vertex v)
+	@Override public LinkedList<Vertex<T>> areReachable(Vertex<T> v)
 	{		
-		LinkedList<Vertex> result = new LinkedList<Vertex>();
+		LinkedList<Vertex<T>> result = new LinkedList<Vertex<T>>();
 		int[] visited = new int[vertices.size()];
 		
-		for(Vertex ve: vertices)
+		for(Vertex<T> ve: vertices)
 		{
 			visited[vertices.indexOf(ve)] = 0; //0 := not visited jet
 		}
@@ -43,9 +43,9 @@ public class UndirectedGraph extends Graph {
 		
 		while(!result.isEmpty())
 		{
-			Vertex pointer = result.getFirst();			
+			Vertex<T> pointer = result.getFirst();			
 			visited[vertices.indexOf(pointer)] = 1; //1 := visited
-			for(Edge e: pointer.AdjacentEdges)
+			for(Edge<T> e: pointer.AdjacentEdges)
 			{
 				if(e.U == pointer && !result.contains(e.V) && visited[vertices.indexOf(e.V)] == 0)
 				{
@@ -61,7 +61,7 @@ public class UndirectedGraph extends Graph {
 			result.removeFirst();
 		}		
 		
-		for(Vertex ver: vertices) //now rebuild, comparing to visited
+		for(Vertex<T> ver: vertices) //now rebuild, comparing to visited
 		{
 			if(visited[vertices.indexOf(ver)] == 1)
 			{
@@ -72,17 +72,17 @@ public class UndirectedGraph extends Graph {
 	}
 	
 	/**@param a linkedList of edges @return a linkedList of edges, without any parallels for an undirected graph**/
-	@Override protected LinkedList<Edge> removeAllParallels(LinkedList<Edge> edges)
+	@Override protected LinkedList<Edge<T>> removeAllParallels(LinkedList<Edge<T>> edges)
 	{
-		LinkedList<Edge> result = new LinkedList<Edge>();
+		LinkedList<Edge<T>> result = new LinkedList<Edge<T>>();
 		
-		Edge pointer = edges.get(0);
+		Edge<T> pointer = edges.get(0);
 		
 		while(!edges.isEmpty())
 		{
 			boolean flag = false;
 			pointer = edges.pop();
-			for(Edge comparator : edges)
+			for(Edge<T> comparator : edges)
 			{
 				if(pointer.U == comparator.U && pointer.V == comparator.V 
 						|| pointer.U == comparator.V && pointer.V == comparator.U) //parallel founded

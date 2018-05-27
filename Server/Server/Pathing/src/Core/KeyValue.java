@@ -1,10 +1,10 @@
 package Core;
 
-public class KeyValue {
-	public Object Key;
-	public Object Value;
+public class KeyValue <T1,T2> {
+	public T1 Key;
+	public T2 Value;
 	
-	public KeyValue(Object key, Object value)
+	public KeyValue(T1 key, T2 value)
 	{
 		this.Key = key;
 		this.Value = value;		
