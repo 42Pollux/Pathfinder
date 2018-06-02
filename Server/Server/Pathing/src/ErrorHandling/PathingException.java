@@ -19,6 +19,9 @@ public class PathingException extends Exception {
 			case 2:
 				this.id = id;
 				this.message ="Start- and endpoint are not reachable in this graph";
+			case 3:
+				this.id = id;
+				this.message ="The path sequence was incorrect. Edge's start- and endpoint has to be vertex u_n and u_n+1.";
 		}
 	}
 }

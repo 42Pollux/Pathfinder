@@ -10,13 +10,15 @@ public class UndirectedGraph <T> extends Graph <T> {
 		this.vertices = new LinkedList<Vertex<T>>();
 		this.edges = new LinkedList<Edge<T>>();
 		
-		this.insertEdges(edges);
 		this.insertVertices(vertices);
-		
+		this.insertEdges(edges);
+				
 		for(Edge<T> e:this.edges)
 		{
-			e.U.AdjacentEdges.add(e);
-			e.V.AdjacentEdges.add(e);
+			Vertex<T>u=this.vertices.stream().filter(vertex->vertex.ID==e.U.ID).findFirst().get();
+			Vertex<T>v=this.vertices.stream().filter(vertex->vertex.ID==e.V.ID).findFirst().get();
+			u.AdjacentEdges.add(e);
+			v.AdjacentEdges.add(e);
 		}
 	}	
 	
@@ -43,8 +45,9 @@ public class UndirectedGraph <T> extends Graph <T> {
 		
 		while(!result.isEmpty())
 		{
-			Vertex<T> pointer = result.getFirst();			
-			visited[vertices.indexOf(pointer)] = 1; //1 := visited
+			Vertex<T> pointer = result.getFirst();		
+			
+			visited[vertices.indexOf(pointer)] = 1; //1 := visited			
 			for(Edge<T> e: pointer.AdjacentEdges)
 			{
 				if(e.U == pointer && !result.contains(e.V) && visited[vertices.indexOf(e.V)] == 0)

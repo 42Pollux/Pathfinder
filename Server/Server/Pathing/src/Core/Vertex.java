@@ -2,7 +2,7 @@ package Core;
 import java.util.*;
 
 public class Vertex <T>{
-	public int ID ;				// id in a graph. the number comes from the graph, this vertex is part of
+	public int ID =-1;		// id in a graph. the number is given from the graph, this vertex is part of. -1 indicates that this vertex is not part of a graph
 	public T Storage;		// to store something
 	public String Name;			//a human-readable name
 	protected LinkedList<Edge<T>> AdjacentEdges; //save the adjacent edges to this vertex
@@ -22,7 +22,7 @@ public class Vertex <T>{
 	public int getInDegree()
 	{
 		int result = 0;
-		for(Edge e: AdjacentEdges)
+		for(Edge<T> e: AdjacentEdges)
 		{
 			if(e.V == this)
 				result ++;			

@@ -60,6 +60,7 @@ public class DatabaseConnection {
 					result.add(thisRow);
 				};
 			}
+			this.Statement.close();
 			return result;			
 		}
 		
@@ -69,8 +70,9 @@ public class DatabaseConnection {
 		{
 			try{
 				this.Statement = Connection.createStatement();
-				this.Statement.execute(yourQuery);
+				this.Statement.executeUpdate(yourQuery);
 				System.out.println("Transaction succeed");
+				this.Statement.close();
 			}catch(Exception e){
 				System.out.println(e.getMessage());
 			}			

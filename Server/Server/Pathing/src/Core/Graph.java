@@ -3,8 +3,8 @@ import java.util.*;
 public abstract class Graph <T>{
 	protected LinkedList<Vertex<T>> vertices;
 	protected LinkedList<Edge<T>> edges;
-	protected static int verticesID = 0;
-	protected static int edgesID= 0;
+	private static int verticesID = 0;
+	private static int edgesID= 0;
 	
 	//public abstract Graph byVerticesAndEdges(List<Vertex> vertices, List<Edge> edges);
 	
@@ -27,9 +27,12 @@ public abstract class Graph <T>{
 		{
 			for(Vertex<T> v:vertices)
 			{
-				v.ID = verticesID;
-				verticesID ++;
-				this.vertices.add(v);
+				if(!this.vertices.contains(v))
+				{
+					v.ID = verticesID;
+					verticesID ++;
+					this.vertices.add(v);
+				}				
 			}
 		}		
 	}
@@ -51,5 +54,10 @@ public abstract class Graph <T>{
 	public LinkedList<Vertex<T>> getVertices()
 	{
 		return this.vertices;
+	}
+	
+	public LinkedList<Edge<T>> getEdges()
+	{
+		return this.edges;
 	}
 }

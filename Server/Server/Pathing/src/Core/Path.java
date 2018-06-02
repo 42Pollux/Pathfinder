@@ -12,12 +12,7 @@ public class Path {
 	protected Graph<Storage> InGraph;
 	protected LinkedList<Vertex<Storage>> Vertices = new LinkedList<Vertex<Storage>>();
 	protected LinkedList<Edge<Storage>> Edges = new LinkedList<Edge<Storage>>();
-	protected int Distance;
-	
-	private Path()
-	{
-		
-	}
+	protected int Distance=0;
 	
 	/**@return returns the shortest path through a given graph, based on the shortest length. It is a necessary condition that all edges are weighted.
 	 *  Uses Dijkstra's algorithm to obtain**/
@@ -83,7 +78,12 @@ public class Path {
 			Edge<Storage> edgeBetweenThisVertexAndItsAncestor= vertex.Key.AdjacentEdges.stream().filter(edge-> 
 					edge.U == vertex.Key && edge.V == vertex.Value.Key
 				||	edge.V == vertex.Key && edge.U == vertex.Value.Key).min(new EdgeWeightComparator()).orElse(null);
-			this.Edges.addFirst(edgeBetweenThisVertexAndItsAncestor);			
+			//if it couldn't found a cheapest edge, catch...
+			try{
+				this.Edges.addFirst(edgeBetweenThisVertexAndItsAncestor);				
+				this.Distance += Distance + edgeBetweenThisVertexAndItsAncestor.Weight;
+			}catch(Exception e){}
+			
 			
 			//true if end is reached
 			if(vertex.Value.Key == null)
@@ -94,6 +94,28 @@ public class Path {
 				//now, we are done
 				break;
 			}				
+		}
+	}
+	
+	//creates a new path following exactly the sequence of vertices and edges from the input. Necessary condition is |edges| = |vertices|-1  
+	public Path(Graph<Storage> graph,LinkedList<Vertex<Storage>> vertices,LinkedList<Edge<Storage>> edges) throws PathingException
+	{
+		this.InGraph = graph;
+		while(!edges.isEmpty())
+		{
+			Vertex<Storage> u = vertices.poll();
+			Vertex<Storage> v =vertices.poll();
+			Edge<Storage> edge = edges.poll();
+			
+			//if(edge.U == u && edge.V == v || edge.U ==v &&edge.V ==u)
+			//{
+				this.Vertices.add(u);
+				this.Vertices.add(v);
+				this.Edges.add(edge);
+				Distance += Distance + edge.Weight;
+			//}
+			//else
+			//	throw new PathingException(3);
 		}
 	}
 	
