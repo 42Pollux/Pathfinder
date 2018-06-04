@@ -15,8 +15,11 @@ public class UndirectedGraph <T> extends Graph <T> {
 				
 		for(Edge<T> e:this.edges)
 		{
+			System.out.println("e is: " + e.ID + "\t " + e.Name);
 			Vertex<T>u=this.vertices.stream().filter(vertex->vertex.ID==e.U.ID).findFirst().get();
+			System.out.println("u is: " + u.ID + "\t "+ u.Name);
 			Vertex<T>v=this.vertices.stream().filter(vertex->vertex.ID==e.V.ID).findFirst().get();
+			System.out.println("v is: " + v.ID + "\t "+ v.Name);
 			u.AdjacentEdges.add(e);
 			v.AdjacentEdges.add(e);
 		}

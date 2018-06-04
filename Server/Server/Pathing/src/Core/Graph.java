@@ -3,8 +3,8 @@ import java.util.*;
 public abstract class Graph <T>{
 	protected LinkedList<Vertex<T>> vertices;
 	protected LinkedList<Edge<T>> edges;
-	private static int verticesID = 0;
-	private static int edgesID= 0;
+	private int verticesID = 0;
+	private int edgesID= 0;
 	
 	//public abstract Graph byVerticesAndEdges(List<Vertex> vertices, List<Edge> edges);
 	

@@ -51,6 +51,10 @@ public class Path {
 				KeyValue<Vertex<Storage>, KeyValue<Vertex<Storage>,Integer>> vertexInVerticesAncestorsAndCost = 
 						verticesAncestorsAndCosts.stream().filter(kv->kv.Key.equals(adjacentVertex)).findFirst().orElse(null);
 				
+				//there is no vertex to observe  
+				if(vertexInVerticesAncestorsAndCost == null)
+					continue;
+				
 				//initial step
 				if(vertexInVerticesAncestorsAndCost.Value.Value == Integer.MAX_VALUE)
 					priorityQueue.offer(vertexInVerticesAncestorsAndCost);
@@ -100,23 +104,20 @@ public class Path {
 	//creates a new path following exactly the sequence of vertices and edges from the input. Necessary condition is |edges| = |vertices|-1  
 	public Path(Graph<Storage> graph,LinkedList<Vertex<Storage>> vertices,LinkedList<Edge<Storage>> edges) throws PathingException
 	{
-		this.InGraph = graph;
-		while(!edges.isEmpty())
+		this.InGraph = graph;		
+		//take those edges e's where U or V have only one adjacent edge -> this is always an start/end point
+		ArrayList<Vertex<Storage>> startpoints=vertices.stream().filter(startpoint-> startpoint.getDegree() ==1).collect(Collectors.toCollection(ArrayList::new));
+		ArrayList<Path> paths =  new ArrayList<Path>();
+		for(int i= 1; i<startpoints.size();i++)
 		{
-			Vertex<Storage> u = vertices.poll();
-			Vertex<Storage> v =vertices.poll();
-			Edge<Storage> edge = edges.poll();
-			
-			//if(edge.U == u && edge.V == v || edge.U ==v &&edge.V ==u)
-			//{
-				this.Vertices.add(u);
-				this.Vertices.add(v);
-				this.Edges.add(edge);
-				Distance += Distance + edge.Weight;
-			//}
-			//else
-			//	throw new PathingException(3);
+			paths.add(new Path(InGraph,startpoints.get(i-1),startpoints.get(i)));
 		}
+		for(Path path :paths)
+		{
+			this.Vertices.addAll(path.getVertices());
+			this.Edges.addAll(path.getEdges());
+		}
+		
 	}
 	
 	private static ArrayList <KeyValue<Vertex<Storage>, KeyValue<Vertex<Storage>,Integer>>> initialize(Graph<Storage> graph, Vertex<Storage> startpoint)
@@ -151,12 +152,10 @@ public class Path {
 			if(edge.U == (u.Key) && edge.V == (v.Key))
 			{				
 				edgesBetweenUandV.add(edge);
-				System.out.println("Add to edges: " + edge.Name);
 			}				
 			else if(edge.V == (u.Key) && edge.U == (v.Key))
 			{
 				edgesBetweenUandV.add(edge);
-				System.out.println("Add to edges: " + edge.Name);
 			}});
 		
 		Edge<Storage> cheapestEdge = edgesBetweenUandV.stream().filter(edge -> edge.Weight + u.Value.Value < v.Value.Value).min(new EdgeWeightComparator()).orElse(null);		

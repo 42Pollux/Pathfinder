@@ -40,4 +40,17 @@ public class PathingInterfaceTest {
 			});
 		});
 	}
+	
+	@Test 
+	public void testGetStoredRoutes() throws Exception {
+		ArrayList<Path> paths = PathingInterface.getStoredRoutes("testuser0");
+		
+		paths.forEach(path->{
+			path.getEdges().forEach(edge->{
+				System.out.println("from " +edge.U.Name + " to " + edge.V.Name + " via " + edge.Name);
+			});
+		});
+	}
 }
+
+

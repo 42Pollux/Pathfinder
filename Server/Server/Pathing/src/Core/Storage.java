@@ -1,4 +1,5 @@
 package Core;
+import java.util.*;
 
 /**this class stores every relevant meta information for the vertices**/
 public class Storage {
@@ -9,6 +10,7 @@ public class Storage {
 	protected double Longitude;
 	protected double Latitude;
 	protected double Height;
+	protected ArrayList<String> AdditionalInformation = new ArrayList<String>();
 	
 	//meta objects as another field?
 	
@@ -42,5 +44,16 @@ public class Storage {
 
 	public void setID(int iD) {
 		ID = iD;
+	}
+	
+	public ArrayList<String> getAdditionalInformation()
+	{
+		return this.AdditionalInformation;
+	}
+	
+	public void addAdditionalInformation(String info)
+	{
+		if(info != "")
+			this.AdditionalInformation.add(info);
 	}
 }
