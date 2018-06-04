@@ -116,7 +116,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|left"
-                        android:text="Finden Sie neue Wanderwege!"
+                        android:text="Entdecken Sie neue Wanderwege!"
                         android:alpha="0.65"
                         android:textSize="14sp"
                         android:textColor="@color/colorTitle"

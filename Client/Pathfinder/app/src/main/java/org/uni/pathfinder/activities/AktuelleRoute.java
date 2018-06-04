@@ -21,11 +21,12 @@ public class AktuelleRoute extends AppCompatActivity {
 
         Toolbar customToolbar = (Toolbar) findViewById(R.id.customToolbar);
         setSupportActionBar(customToolbar);
-        getSupportActionBar().setIcon(R.drawable.Pathfinder_weiss_logo);
+        getSupportActionBar().setIcon(R.drawable.pathfinder_weiss_logo_small);
 
         // those 2 lines add the back arrow
         //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         //getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         // status bar color
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

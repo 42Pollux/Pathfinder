@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="0dp"
-    android:layout_sum="10"
+    android:weightSum="10"
     tools:context=".activities.AktuelleRoute">
 
     <android.support.design.widget.AppBarLayout
@@ -19,10 +19,16 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:elevation="4dp"
-            android:padding="0dp"
-            android:layout_weight="1"
-            android:theme="@style/StandardActionBarTheme"
-            app:title="Aktuelle Route"/>
+            android:theme="@style/StandardActionBarTheme">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Aktuelle Route"
+                android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+
+        </android.support.v7.widget.Toolbar>
 
     </android.support.design.widget.AppBarLayout>
 
@@ -31,22 +37,29 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="5dp"
-        android:layout_sum="10"
         android:layout_weight="9"
         android:padding="5dp">
 
-        <org.mapsforge.map.android.view.MapView
-            android:id="@+id/currentRouteMapView"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_weight="7"></org.mapsforge.map.android.view.MapView>
-
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/currentRouteAdditionalInformation"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="10dp"
-            android:layout_weight="3" />
+            android:orientation="vertical"
+            android:weightSum="10">
+
+            <org.mapsforge.map.android.view.MapView
+                android:id="@+id/currentRouteMapView"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_weight="7"></org.mapsforge.map.android.view.MapView>
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/currentRouteAdditionalInformation"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="10dp"
+                android:layout_weight="3" />
+
+        </LinearLayout>
     </ScrollView>
 
 
