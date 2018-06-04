@@ -341,23 +341,23 @@ public class Connector {
     }
 	
 	/**
-	 * Reads four 4-byte sized floats from the input stream.
+	 * Reads four 4-byte sized doubles from the input stream.
 	 * 
 	 * @return	the received map sector
 	 * @throws 	ConnectionUnexpectedlyClosedException
 	 * @throws 	ConnectionTimeoutException
 	 */
-	public float[] readSector() throws ConnectionUnexpectedlyClosedException, ConnectionTimeoutException {
+	public double[] readSector() throws ConnectionUnexpectedlyClosedException, ConnectionTimeoutException {
 		int timeout = 0;
 		while(timeout<MAX_TIMEOUT){
             try {
                 while(in_data.available()>15){
                 	// float = 4 bytes, 1 sector = 4 float -> 16 bytes needed
-                	float[] ret = new float[4];
-                	ret[0] = in_data.readFloat();
-                	ret[1] = in_data.readFloat();
-                	ret[2] = in_data.readFloat();
-                	ret[3] = in_data.readFloat();
+                	double[] ret = new double[4];
+                	ret[0] = in_data.readDouble(); // minLat
+                	ret[1] = in_data.readDouble(); // minLon
+                	ret[2] = in_data.readDouble(); // maxLat
+                	ret[3] = in_data.readDouble(); // maxLon
                     return ret;
                     
                 }

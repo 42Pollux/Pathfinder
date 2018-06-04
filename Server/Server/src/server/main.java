@@ -12,6 +12,7 @@ import network.Cryptography;
 
 public class main {
 
+	@SuppressWarnings("all")
 	public static void main(String[] args) {
 		boolean active_console = true;
 		

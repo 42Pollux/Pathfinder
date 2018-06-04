@@ -92,8 +92,12 @@ public class AsynConnectionAuthThread extends Thread {
 			con.disconnect();
 			return;
 		} else {
-			// TODO validate uid
-			OSDepPrint.info("Successfully authenticated", ref);
+			if(UUIDManager.validateUUID(client_uid)) {
+				OSDepPrint.info("Successfully authenticated", ref);
+			} else {
+				// we shouldn't end up here 
+				return;
+			}
 		}
 		
 		req = con.getCode(5000);
@@ -134,8 +138,7 @@ public class AsynConnectionAuthThread extends Thread {
 	private void respondRegister(){
 		OSDepPrint.net("UID requested", ref);
 		
-		// TODO IMPLEMENT UID GENERATION
-		// out.println("890fu8928f2893kat4g1q");
+		con.writeText(UUIDManager.generateNewUUID());
 		OSDepPrint.debug("Successfully send UID to client", ref);
 		
 	}
@@ -156,15 +159,22 @@ public class AsynConnectionAuthThread extends Thread {
 		OSDepPrint.net("Map file successfully uploaded", ref);
 	}
 	
-	private void respondSector() throws ConnectionUnexpectedlyClosedException, ConnectionTimeoutException, InterruptedException {
-		OSDepPrint.net("Map sector requested, sending file information...", ref);
+	private void respondSector() throws ConnectionUnexpectedlyClosedException, ConnectionTimeoutException, InterruptedException, ProtocolErrorException {
+		OSDepPrint.net("Map sector requested, generating submap...", ref);
 		
 		// responding pattern for sectors
-		float[] sector = con.readSector();
-		// TODO create the map file for the specified sector
-		// TODO implement
+		double[] sector = con.readSector();
+		String ret;
+		try {
+			 ret = ResourceManager.getMap().generateSubmap(sector,  14,  "map_sector_" + ref + ".map");
+		} catch (Exception e) {
+			throw new InterruptedException(); // TODO either an own exception class or w/e
+		}
+		OSDepPrint.net("Uploading '" + ret.substring(ret.lastIndexOf("/")) + "'", ref);
 		checkInterruption();
+		con.sendFile(ret,  0);
 		
+		OSDepPrint.net("Submap successfully uploaded", ref);
 	}
 	
 	private void respondResource() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException, InterruptedException {
