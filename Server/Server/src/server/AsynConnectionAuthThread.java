@@ -14,7 +14,7 @@ import exceptions.ConnectionUnexpectedlyClosedException;
 import exceptions.ProtocolErrorException;
 import helper.OSDepPrint;
 import network.ConnectionCodes;
-import com.pathfinder.pathfindertestclient.shared.XMLObject;
+import org.uni.pathfinder.shared.XMLObject;
 import network.Connector;
 // TODO 
 // - implement the possibility to stop the thread from the outside 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="colorPrimary" type="color">#2e7d32</item>
+    <item name="colorPrimaryDark" type="color">#005005</item>
+    <item name="colorAccent" type="color">#60ad5e</item>
+    <item name="textColorPrimary" type="color">#ffffff</item>
+    <item name="colorTitle" type="color">#ffffff</item>
+    <item name="colorOverflowMenu" type="color">#ffffff</item>
+</resources>
