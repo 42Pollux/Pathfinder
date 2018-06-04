@@ -8,17 +8,26 @@ import java.util.HashMap;
 
 import com.sun.javafx.collections.MappingChange.Map;
 
+import map.MapObject;
 import network.ConnectionCodes;
 
 public class ResourceManager {
 	public static String location = null;
 	private static HashMap<Long, Object> object_list;
+	private static MapObject map;
+	
+	private static String working_map = "/home/michael/pathfinder/map/working_map.map";
 	
 	public ResourceManager() {
 	}
 	
-	public static void initialize() {
+	public static MapObject getMap() {
+		return map;
+	}
+
+	public static void initialize() { // TODO create instance with variable working_map
 		object_list = new HashMap<Long, Object>();
+		map = new MapObject(working_map);
 	}
 	
 	public static void addObject(long object_id, Object obj) {

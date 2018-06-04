@@ -40,15 +40,14 @@ public class AsynServerListener extends Thread {
 	public void run(){
 		
 		System.out.println("Server listening on " + server.getInetAddress().toString().replace("/", "") + ":" + server.getLocalPort());
-		while(!terminate_flag){															// abbruch von konsole möglich machen
+		while(!terminate_flag){
 			try {
 				client = server.accept();
 				Socket newClient = new Socket();
-				newClient = client;												// ist das ne deep copy?
+				newClient = client;	// ist das ne deep copy?
 				connCounter++;
 				System.out.println(" [ #" + connCounter + " ] " +  client.getInetAddress().toString().replace("/", "") + ":" + client.getLocalPort() + " connected");
 				AsynConnectionAuthThread conn = new AsynConnectionAuthThread(newClient, connCounter);
-				//Thread conn = new Thread(new AsynConnectionAuthThread(newClient, connCounter));
 				Date currDate = new Date();
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				conn.setName(sdf.format(currDate) + ", " + client.getInetAddress().toString().replace("/", ""));
