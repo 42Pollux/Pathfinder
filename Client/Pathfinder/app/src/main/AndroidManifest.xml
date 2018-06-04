@@ -18,9 +18,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.RoutePlanen">
+        <activity android:name=".activities.RoutePlanen"
+            android:parentActivityName=".activities.Hauptmenu">
         </activity>
-        <activity android:name=".activities.AktuelleRoute">
+        <activity android:name=".activities.AktuelleRoute"
+            android:parentActivityName=".activities.Hauptmenu">
         </activity>
     </application>
 

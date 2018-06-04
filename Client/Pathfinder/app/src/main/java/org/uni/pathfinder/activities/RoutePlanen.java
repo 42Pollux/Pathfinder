@@ -2,6 +2,7 @@ package org.uni.pathfinder.activities;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -53,6 +54,10 @@ public class RoutePlanen extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_route) {
+            return true;
+        }
+        if (id == android.R.id.home) {
+            NavUtils.navigateUpFromSameTask(this);
             return true;
         }
 
