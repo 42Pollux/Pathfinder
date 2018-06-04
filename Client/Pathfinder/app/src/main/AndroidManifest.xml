@@ -11,12 +11,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-        <activity android:name=".activities.Hauptmenu">
+        <activity android:name=".activities.Hauptmenu"> <!-- kopiere activity für neues Fenster, ohne intent filter -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".activities.RoutePlanen">
+        </activity>
+        <activity android:name=".activities.AktuelleRoute">
         </activity>
     </application>
 

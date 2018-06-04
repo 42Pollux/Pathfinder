@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="0dp"
+    android:layout_sum="10"
+    tools:context=".activities.RoutePlanen">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/customToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:elevation="4dp"
+            android:padding="0dp"
+            android:theme="@style/StandardActionBarTheme"
+            app:title="Route planen"/>
+    </android.support.design.widget.AppBarLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="10dp"
+        android:layout_sum="10">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="5dp"
+            android:paddingBottom="10dp"
+            android:layout_weight="10">
+
+            <Switch
+                android:id="@+id/collapseMap"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:text="aktuellen Standort nutzen"
+                android:layout_weight="1"/>
+
+            <org.mapsforge.map.android.view.MapView
+                android:layout_width="wrap_content"
+                android:layout_height="1dp"
+                android:layout_weight="5"></org.mapsforge.map.android.view.MapView>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="30dp"
+                android:layout_weight="3"
+                android:layout_sum="10">
+
+
+                <EditText
+                    android:id="@+id/txtStartpoint"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="2dp"
+                    android:layout_weight="3"
+
+                    android:hint="Startpunkt" />
+
+                <EditText
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="2dp"
+                    android:layout_weight="3"
+
+                    android:hint="Endpunkt" />
+
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="2dp"
+                    android:layout_weight="3"
+                    android:hint="weiterer Wegpunkt"
+                    android:paddingButtom="15dp" />
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="Schwierigkeit wählen "
+                android:layout_weight="1"/>
+            <Switch
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:text="Zeit in h "
+                android:layout_weight="1"/>
+
+            <Switch
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:text="Steigung in Höhenmeter"
+                android:layout_weight="1"
+                />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="2dp"
+                android:hint ="10 m"
+                android:layout_marginTop="15dp"/>
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="Route berechnen"
+                android:textColor="@color/colorTitle"
+                android:background="@color/colorPrimary"
+                android:layout_weight="1.5"/>
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
