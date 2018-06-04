@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activities.Hauptmenu">
+    tools:context=".activities.Hauptmenu"
+    android:orientation="vertical"
+
+    >
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -17,7 +20,237 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:theme="@style/StandardActionBarTheme"
-            android:elevation="4dp" />
+            android:elevation="24dp" />
     </android.support.design.widget.AppBarLayout>
 
-</android.support.constraint.ConstraintLayout>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!-- Menu Element-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:padding="6dp">
+                <FrameLayout
+                    android:id="@+id/menu_aktuelle_route"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/menu_aktuelle_route_small"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_gravity="bottom"
+                        android:background="@drawable/custom_gradient_bottom"/>
+                    <View
+                        android:layout_width="128dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="right"
+                        android:background="@drawable/custom_gradient_right"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|right"
+                        android:text="Aktuelle Route"
+                        android:textSize="24sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="28dp"
+                        android:paddingRight="10dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|right"
+                        android:text="Gehen Sie zu Ihrer aktuellen Route!"
+                        android:alpha="0.65"
+                        android:textSize="14sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="10dp"
+                        android:paddingRight="10dp"/>
+
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Menu Element-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:padding="6dp">
+                <FrameLayout
+                    android:id="@+id/menu_neue_route"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/menu_neue_route_small"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_gravity="bottom"
+                        android:background="@drawable/custom_gradient_bottom"/>
+                    <View
+                        android:layout_width="128dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="left"
+                        android:background="@drawable/custom_gradient_left"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|left"
+                        android:text="Neue Route berechnen"
+                        android:textSize="24sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="28dp"
+                        android:paddingLeft="10dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|left"
+                        android:text="Finden Sie neue Wanderwege!"
+                        android:alpha="0.65"
+                        android:textSize="14sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="10dp"
+                        android:paddingLeft="10dp"/>
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Menu Element-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:padding="6dp">
+                <FrameLayout
+                    android:id="@+id/menu_meine_routen"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/menu_meine_routen_small"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_gravity="bottom"
+                        android:background="@drawable/custom_gradient_bottom"/>
+                    <View
+                        android:layout_width="172dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="right"
+                        android:background="@drawable/custom_gradient_right"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|right"
+                        android:text="Meine Routen"
+                        android:textSize="24sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="28dp"
+                        android:paddingRight="10dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|right"
+                        android:text="Wiederentdecken Sie Ihre alten Wanderwege!"
+                        android:alpha="0.65"
+                        android:textSize="14sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="10dp"
+                        android:paddingRight="10dp"/>
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Menu Element-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:padding="6dp">
+                <FrameLayout
+                    android:id="@+id/menu_wandertipps"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/menu_wandertipps_small"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_gravity="bottom"
+                        android:background="@drawable/custom_gradient_bottom"/>
+                    <View
+                        android:layout_width="128dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="left"
+                        android:background="@drawable/custom_gradient_left"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|left"
+                        android:text="Wandertipps"
+                        android:textSize="24sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="28dp"
+                        android:paddingLeft="10dp"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|left"
+                        android:text="Wichtige Informationen für Ihre Wanderung!"
+                        android:alpha="0.65"
+                        android:textSize="14sp"
+                        android:textColor="@color/colorTitle"
+                        android:paddingBottom="10dp"
+                        android:paddingLeft="10dp"/>
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Menu Element-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:padding="6dp">
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scaleType="centerCrop"
+                        android:adjustViewBounds="true"
+                        android:src="@drawable/menu_neue_route_small"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_gravity="bottom"
+                        android:background="@drawable/custom_gradient_bottom"/>
+                    <View
+                        android:layout_width="128dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="right"
+                        android:background="@drawable/custom_gradient_right"/>
+                </FrameLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</LinearLayout>

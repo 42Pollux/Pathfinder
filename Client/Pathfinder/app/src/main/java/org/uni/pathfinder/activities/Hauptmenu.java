@@ -1,5 +1,6 @@
 package org.uni.pathfinder.activities;
 
+import android.content.Context;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -7,8 +8,11 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
 
 import org.uni.pathfinder.R;
 
@@ -33,6 +37,39 @@ public class Hauptmenu extends AppCompatActivity {
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(ContextCompat.getColor(this,R.color.colorPrimaryDark));
         }
+
+        FrameLayout frame_aktuelle_route = (FrameLayout) findViewById(R.id.menu_aktuelle_route);
+        FrameLayout frame_neue_route = (FrameLayout) findViewById(R.id.menu_neue_route);
+        FrameLayout frame_meine_routen = (FrameLayout) findViewById(R.id.menu_meine_routen);
+        FrameLayout frame_wandertipps = (FrameLayout) findViewById(R.id.menu_wandertipps);
+
+        frame_aktuelle_route.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+            }
+        });
+
+        frame_neue_route.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+            }
+        });
+
+        frame_meine_routen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+            }
+        });
+
+        frame_wandertipps.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+            }
+        });
 
     }
 

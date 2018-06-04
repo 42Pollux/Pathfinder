@@ -6,4 +6,5 @@
     <item name="textColorPrimary" type="color">#ffffff</item>
     <item name="colorTitle" type="color">#ffffff</item>
     <item name="colorOverflowMenu" type="color">#ffffff</item>
+    <item name="black" type="color">#000000</item>
 </resources>
