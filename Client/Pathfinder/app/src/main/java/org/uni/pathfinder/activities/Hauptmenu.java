@@ -1,6 +1,7 @@
 package org.uni.pathfinder.activities;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -47,6 +48,8 @@ public class Hauptmenu extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+                Intent newAct = new Intent(Hauptmenu.this, AktuelleRoute.class);
+                Hauptmenu.this.startActivity(newAct);
             }
         });
 
@@ -54,6 +57,8 @@ public class Hauptmenu extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+                Intent newAct = new Intent(Hauptmenu.this, RoutePlanen.class);
+                Hauptmenu.this.startActivity(newAct);
             }
         });
 
