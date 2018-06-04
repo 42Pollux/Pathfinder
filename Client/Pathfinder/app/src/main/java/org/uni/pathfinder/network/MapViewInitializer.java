@@ -1,5 +1,7 @@
 package org.uni.pathfinder.network;
 
+import android.util.Log;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,9 +40,10 @@ public class MapViewInitializer {
             in.read(barry);
             int zoom = barry[0];
 
-            this.latitude = lat;
-            this.longitude = lon;
+            this.latitude = ((double)lat)/1000000;
+            this.longitude = ((double)lon)/1000000;
             this.zoomLevel = zoom;
+            Log.d("DEBUG1", "lat: " + lat + ", lon: " + lon);
 
         } catch (IOException e) {
             e.printStackTrace();

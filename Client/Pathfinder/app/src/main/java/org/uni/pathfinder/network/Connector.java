@@ -71,8 +71,8 @@ public class Connector {
      * @param retry     set this true for a manual retry
      */
     // request methods for map sectors
-    public void requestMapSector(int thread_id, float[] sector, boolean retry){
-        new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id, sector, retry)).start();
+    public void requestMapSector(int thread_id, double[] sector, boolean retry){
+        new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id, ConnectionCodes.SECTOR, sector, retry)).start();
     }
 
     /**
@@ -144,7 +144,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
     private int thread_id_global;
     private long item_id_global;
     private boolean is_retry_global = false;
-    private float[] sector = new float[4];
+    private double[] sector = new double[4];
     private XMLObject xml_global;
 
     private NotificationManager notificationManager = null;
@@ -165,11 +165,12 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
     }
 
     // constructor for map sector requests
-    public ThreadRequest(Context _context, NetworkingThreadFinishListener _onNetworkingFinished, NetworkingConsoleListener _onNetworkingProgress, int _thread_id, float[] _sector, boolean _retry) {
+    public ThreadRequest(Context _context, NetworkingThreadFinishListener _onNetworkingFinished, NetworkingConsoleListener _onNetworkingProgress, int _thread_id, byte _code, double[] _sector, boolean _retry) {
         this.context = _context;
         this.thread_id_global = _thread_id;
         this.onNetworkingFinished = _onNetworkingFinished;
         this.onNetworkingProgress = _onNetworkingProgress;
+        this.request_code_global = _code;
         this.is_retry_global = _retry;
         this.sector = _sector;
     }
@@ -203,7 +204,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
 
     private void debug_log(String text){
         Log.d("DEBUG1", text);
-        onNetworkingProgress.onNetworkingProgress(text);
+        //onNetworkingProgress.onNetworkingProgress(text);
     }
 
 
@@ -238,7 +239,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         } catch (ProtocolErrorException e) {
             debug_log(ConnectionCodes.ERR_PROTO);
             onNetworkingFinished.onNetworkingResult(thread_id_global, ConnectionCodes.ERR_PROTO, null, true);
-        } catch (Exception e) {
+        } catch (IOException e) {
             debug_log(ConnectionCodes.ERR_PROTO);
             onNetworkingFinished.onNetworkingResult(thread_id_global, ConnectionCodes.ERR_PROTO, null, true);
         }
@@ -413,7 +414,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
      * @throws ProtocolErrorException
      * @throws FileNotFoundException
      */
-    private void requestSector(float[] _sector) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException, IOException {
+    private void requestSector(double[] _sector) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException, IOException {
         debug_log("Requested: Sector");
 
         // request pattern for objects
@@ -422,12 +423,15 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
 
         String file_name = getTextResponse();
         String file_path = app_path + "/tmp/" + file_name;
+        debug_log(file_name);
         // grab the map initializing data
+
+        String result = receiveMapSector(file_path, _sector, false);
+        debug_log(file_path);
         FileInputStream in = new FileInputStream(file_path);
         MapViewInitializer initializer = new MapViewInitializer(in);
         in.close();
-
-        String result = receiveMapSector(file_path, _sector, false);
+        debug_log("hier2");
         onNetworkingFinished.onNetworkingResult(thread_id_global, result, initializer, false);
     }
 
@@ -623,12 +627,12 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
      *
      * @param sector
      */
-    private void writeSector(float[] sector){
+    private void writeSector(double[] sector){
         try {
-            out_data.writeFloat(sector[0]);
-            out_data.writeFloat(sector[1]);
-            out_data.writeFloat(sector[2]);
-            out_data.writeFloat(sector[3]);
+            out_data.writeDouble(sector[0]);
+            out_data.writeDouble(sector[1]);
+            out_data.writeDouble(sector[2]);
+            out_data.writeDouble(sector[3]);
             out_data.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -833,13 +837,13 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
      * @throws ConnectionUnexpectedlyClosedException
      * @throws FileNotFoundException
      */
-    private String receiveMapSector(String file_path, float[] sector, boolean retry) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, FileNotFoundException {
+    private String receiveMapSector(String file_path, double[] sector, boolean retry) throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, FileNotFoundException {
         long file_size = 0;
         long curr = 0;
         int retries_visual = 1;
         int retries_real = 0;
         boolean init_append = false;
-
+        debug_log("gogo");
         // cleanup
         if(retry){
             // append mode
@@ -851,7 +855,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
 
         // get file size
         file_size = getOperationSize();
-
+        debug_log("gogo2");
         // grabbing data, retry loop
         curr += getSegment(file_path, init_append, file_size, 0, true);
         while((retries_real < 7)&&(curr<file_size)){

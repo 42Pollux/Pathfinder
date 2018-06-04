@@ -1,5 +1,6 @@
 package org.uni.pathfinder.activities;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
@@ -10,8 +11,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 
 import org.uni.pathfinder.R;
+import org.uni.pathfinder.RequestManager;
 
 public class RoutePlanen extends AppCompatActivity {
 
@@ -36,6 +40,19 @@ public class RoutePlanen extends AppCompatActivity {
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(ContextCompat.getColor(this,R.color.colorPrimaryDark));
         }
+
+        RequestManager.initialize(getApplicationContext());
+
+        Switch showMap = findViewById(R.id.collapseMap);
+        showMap.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    Intent newAct = new Intent(RoutePlanen.this, StandortAuswahl.class);
+                    RoutePlanen.this.startActivity(newAct);
+                }
+            }
+        });
     }
 
     @Override

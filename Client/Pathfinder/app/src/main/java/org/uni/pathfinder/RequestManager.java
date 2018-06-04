@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -29,9 +30,11 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.uni.pathfinder.network.ConnectionCodes.SECTOR;
+
 public class RequestManager {
     private static Thread q;
-    private static HashMap<Integer, Request> queue_view;
+    private static HashMap<Integer, Request> queue_view = new HashMap<Integer, Request>();
     private static int id_counter = 0;
     private static Activity logger_act;
     private static TextView logger_txtv;
@@ -43,20 +46,21 @@ public class RequestManager {
         appContext = _context;
         Connector con = new Connector(_context);
         connector = con;
+        createDirectories();
     }
 
     public static void requestPath(XMLObject xml ) {
 
     }
 
-    public static void requestMap(byte map_code) {
-        Request r = new Request(ConnectionCodes.MAP, map_code);
+    public static void requestMap(Activity act, byte map_code) {
+        Request r = new Request(act, ConnectionCodes.MAP, map_code);
         queue_view.put(id_counter, r);
         id_counter++;
     }
 
-    public static void requestSector(double[] sector, View view) {
-        Request r = new Request(ConnectionCodes.SECTOR, sector, view);
+    public static void requestSector(Activity act, double[] sector, View view) {
+        Request r = new Request(act, SECTOR, sector, view);
         queue_view.put(id_counter, r);
         id_counter++;
     }
@@ -93,6 +97,19 @@ public class RequestManager {
             }
         });
     }
+
+    private static void createDirectories(){
+        String res_dir = appContext.getFilesDir().getAbsolutePath() + "/res";
+        String map_dir = appContext.getFilesDir().getAbsolutePath() + "/map";
+        String tmp_dir = appContext.getFilesDir().getAbsolutePath() + "/tmp";
+
+        File dir = new File(res_dir);
+        dir.mkdir();
+        dir = new File(map_dir);
+        dir.mkdir();
+        dir = new File(tmp_dir);
+        dir.mkdir();
+    }
 }
 
 class Request {
@@ -110,21 +127,23 @@ class Request {
         this.act = _act;
     }
 
-    public Request(byte _type, byte _code) {
+    public Request(Activity _act, byte _type, byte _code) {
         this.type = _type;
         this.map_code = _code;
+        this.act = _act;
     }
 
-    public Request(byte _type, double[] _sector, View _view) {
+    public Request(Activity _act, byte _type, double[] _sector, View _view) {
         this.type = _type;
         this.sector = _sector;
         this.view = _view;
+        this.act = _act;
     }
 }
 
 
 class Queue implements Runnable {
-    volatile int queue_counter = 0;
+    public static volatile int queue_counter = 0;
     HashMap<Integer, Request> queue;
     // helper variables only to avoid 'is accessed from within inner class' compilation error
     private Bitmap helper_bmp;
@@ -144,7 +163,9 @@ class Queue implements Runnable {
         RequestManager.connector.setOnNetworkingFinished(new NetworkingThreadFinishListener() {
             @Override
             public void onNetworkingResult(int request_id, String message, Object data, boolean failure) {
+                Queue.queue_counter = Queue.queue_counter--;
                 Request r = queue.get(request_id);
+                Log.d("DEBUG1", "HELLU");
                 switch(r.type){
                     case ConnectionCodes.IMAGE:
                         if(!failure){
@@ -175,9 +196,10 @@ class Queue implements Runnable {
                             // TODO put placeholder here?
                         }
                         break;
-                    case ConnectionCodes.SECTOR:
+                    case SECTOR:
                         if(!failure){
-                            helper_mapv = new org.mapsforge.map.android.view.MapView(r.act);
+                            Log.d("DEBUG1", "Hi" + r.sector[0]);
+                            helper_mapv = (org.mapsforge.map.android.view.MapView) r.view;
                             TileCache tile_cache = AndroidUtil.createTileCache(r.act, "mapcache", helper_mapv.getModel().displayModel.getTileSize(), 1f,
                                     helper_mapv.getModel().frameBufferModel.getOverdrawFactor());
                             File map_file = new File(message);
@@ -201,17 +223,30 @@ class Queue implements Runnable {
             }
         });
 
-        for(Map.Entry<Integer, Request> e: queue_view.entrySet()){
-            while(queue_counter<3){
-
-            }
-        }
     }
 
 
     @Override
     public void run() {
-
+        Log.d("DEBUG1", "started");
+        for(Map.Entry<Integer, Request> e: queue.entrySet()){
+            while(queue_counter<3){
+                Log.d("DEBUG1", "switching");
+                switch(e.getValue().type){
+                    case ConnectionCodes.SECTOR:
+                        RequestManager.connector.requestMapSector(e.getKey(), e.getValue().sector, false);
+                        break;
+                }
+                break;
+            }
+            while(queue_counter>2){
+                try {
+                    Thread.sleep(1000);
+                } catch (Exception f) {
+                    f.printStackTrace();
+                }
+            }
+        }
     }
 
 
