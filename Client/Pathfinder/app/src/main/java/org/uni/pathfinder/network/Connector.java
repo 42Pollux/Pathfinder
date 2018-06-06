@@ -7,10 +7,13 @@ package org.uni.pathfinder.network;
 
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import org.uni.pathfinder.R;
+import org.uni.pathfinder.RequestManager;
+import org.uni.pathfinder.activities.Hauptmenu;
 import org.uni.pathfinder.exceptions.ConnectionTimeoutException;
 import org.uni.pathfinder.exceptions.ConnectionUnexpectedlyClosedException;
 import org.uni.pathfinder.exceptions.ProtocolErrorException;
@@ -44,11 +47,6 @@ public class Connector {
 
     public Connector(Context _app_context){
         this.app_context = _app_context;
-    }
-
-    // test method
-    public void requestTest(int thread_id){
-        new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id)).start();
     }
 
     /**
@@ -130,6 +128,11 @@ public class Connector {
     public void requestPaths(int thread_id, XMLObject xml){
         new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id, ConnectionCodes.PATH, xml)).start();
     }
+
+    // request methods for register
+    public void requestRegister(int thread_id){
+        new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id, ConnectionCodes.REGISTER)).start();
+    }
 }
 
 class ThreadRequest implements Runnable, NetworkingThreadFinishListener, NetworkingConsoleListener {
@@ -195,11 +198,13 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         this.xml_global = _xml;
     }
 
-    // constructor for tests
-    public ThreadRequest(Context _context, NetworkingThreadFinishListener _onNetworkingFinished, NetworkingConsoleListener _onNetworkingProgress, int _thread_id){
+    // constructor for register requests
+    public ThreadRequest(Context _context, NetworkingThreadFinishListener _onNetworkingFinished, NetworkingConsoleListener _onNetworkingProgress, int _thread_id, byte _code){
+        this.context = _context;
         this.thread_id_global = _thread_id;
         this.onNetworkingFinished = _onNetworkingFinished;
         this.onNetworkingProgress = _onNetworkingProgress;
+        this.request_code_global = _code;
     }
 
     private void debug_log(String text){
@@ -254,8 +259,17 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
      * @throws ConnectionUnexpectedlyClosedException
      */
     private void initialize(boolean reset) throws ConnectionUnexpectedlyClosedException {
-        // TODO set client uid from shared preferences, only on first call not for retry
-        client_uid = "asUdwSgQDDfd5FeWR6";
+        if(!reset) {
+            SharedPreferences spref = context.getSharedPreferences(Hauptmenu.SHAREDPREFKEY, Context.MODE_PRIVATE);
+            String uuid = spref.getString("key_uuid",  null);
+            if(uuid==null){
+                client_uid = "0000";
+                Log.d("DEBUG1", "UID set to" + "0000");
+            } else {
+                Log.d("DEBUG1", "UID set to" + uuid);
+                client_uid = uuid;
+            }
+        }
 
         try {
             if(reset){
@@ -359,6 +373,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         // request pattern for registering
         writeCode(ConnectionCodes.REGISTER);
         client_uid = getTextResponse();
+        onNetworkingFinished.onNetworkingResult(thread_id_global, client_uid, null, false);
     }
 
     /**
@@ -452,7 +467,7 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         writeCode(ConnectionCodes.PATH);
         writeObject(xml);
 
-        List<XMLObject> result = (ArrayList<XMLObject>) receiveObject();
+        XMLObject result = (XMLObject) receiveObject();
         onNetworkingFinished.onNetworkingResult(thread_id_global, null, result, false);
     }
 

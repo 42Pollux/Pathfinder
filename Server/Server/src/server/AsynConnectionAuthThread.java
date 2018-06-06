@@ -15,6 +15,9 @@ import exceptions.ProtocolErrorException;
 import helper.OSDepPrint;
 import network.ConnectionCodes;
 import org.uni.pathfinder.shared.XMLObject;
+
+import Core.Path;
+import PathingInterface.PathingInterface;
 import network.Connector;
 // TODO 
 // - implement the possibility to stop the thread from the outside 
@@ -36,14 +39,16 @@ public class AsynConnectionAuthThread extends Thread {
 			OSDepPrint.error("Failed to initialize networking component", ref);
 			// TODO stop thread
 		}
-		try {
-			location = AsynConnectionAuthThread.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-			location = location.substring(0,  location.length()-10); //server.jar 10 chars
-			ResourceManager.location = location;
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			//location = AsynConnectionAuthThread.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+//			location = location.substring(0,  location.length()-10); //server.jar 10 chars
+//			ResourceManager.location = location;
+//		} catch (URISyntaxException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		
+		ResourceManager.location = "/home/michael/pathfinder/";
 	}
 	
 	
@@ -66,7 +71,8 @@ public class AsynConnectionAuthThread extends Thread {
 		} catch (InterruptedException e) {
 			// special treatment?
 		} catch (Exception e) {
-			//return;
+			e.printStackTrace();
+			OSDepPrint.error(e.getMessage(), ref);
 		}
 		
 		AsynServerListener.unregister(ref, this);
@@ -75,14 +81,10 @@ public class AsynConnectionAuthThread extends Thread {
 	/**
 	 * Exchanges the public, session keys and validates the UID. Then filters the
 	 * next incoming code and calls the corresponding request function.
-	 * 
-	 * @throws ProtocolErrorException 
-	 * @throws ConnectionUnexpectedlyClosedException 
-	 * @throws ConnectionTimeoutException 
-	 * @throws InterruptedException 
+	 * @throws Exception 
 	 * 
 	 */
-	private void request() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, ProtocolErrorException, InterruptedException{
+	private void request() throws Exception{
 		int req = 0;
 		
 		// exchange public keys		
@@ -117,7 +119,7 @@ public class AsynConnectionAuthThread extends Thread {
 										break;
 		case ConnectionCodes.OBJECT:	respondObject();
 										break;
-		case ConnectionCodes.PATH:		respondPath();
+		case ConnectionCodes.PATH:		respondPath(); 					//make new route
 										break;
 		case ConnectionCodes.RETRY:		OSDepPrint.net("Retry requested", ref);
 										con.retry();
@@ -134,11 +136,18 @@ public class AsynConnectionAuthThread extends Thread {
 	/**
 	 * Generates a UID and sends it to the client
 	 * TODO implement
+	 * @throws Exception 
 	 */
-	private void respondRegister(){
+	private void respondRegister() throws Exception{
 		OSDepPrint.net("UID requested", ref);
 		
-		con.writeText(UUIDManager.generateNewUUID());
+		String newid = UUIDManager.generateNewUUID();
+		if(!PathingInterface.notifyUserIDIntoDB(newid)) {
+			con.writeText("0000");
+			OSDepPrint.error("Couldn't add uuid to db", ref);
+			throw new Exception();
+		}
+		con.writeText(newid);
 		OSDepPrint.debug("Successfully send UID to client", ref);
 		
 	}
@@ -159,18 +168,16 @@ public class AsynConnectionAuthThread extends Thread {
 		OSDepPrint.net("Map file successfully uploaded", ref);
 	}
 	
-	private void respondSector() throws ConnectionUnexpectedlyClosedException, ConnectionTimeoutException, InterruptedException, ProtocolErrorException {
+	private void respondSector() throws Exception {
 		OSDepPrint.net("Map sector requested, generating submap...", ref);
 		
 		// responding pattern for sectors
 		double[] sector = con.readSector();
 		String ret;
-		try {
-			 ret = ResourceManager.getMap().generateSubmap(sector,  14,  "map_sector_" + ref + ".map");
-		} catch (Exception e) {
-			throw new InterruptedException(); // TODO either an own exception class or w/e
-		}
+		ret = ResourceManager.getMap().generateSubmap(sector,  14,  "map_sector_" + ref + ".map");
+		
 		OSDepPrint.net("Uploading '" + ret.substring(ret.lastIndexOf("/")) + "'", ref);
+		con.writeText("map_sector_" + ref + ".map");
 		checkInterruption();
 		con.sendFile(ret,  0);
 		
@@ -206,22 +213,56 @@ public class AsynConnectionAuthThread extends Thread {
 		OSDepPrint.net("Object successfully uploaded", ref);
 	}
 
-	private void respondPath() throws InterruptedException {
+	private void respondPath() throws Exception {
 		OSDepPrint.net("Pathing request", ref);
 		
 		// TODO reference to pathing calculations
 		
 		// responding pattern for paths
 		XMLObject xml = (XMLObject) con.readObject();
-		OSDepPrint.info("Pathing value: " + xml.getValue(), ref);
-		// testing values
-		List<XMLObject> paths = new ArrayList<XMLObject>();
-		paths.add(new XMLObject(32));
-		paths.add(new XMLObject(42));
+		ArrayList<String> data = xml.getDataList();
+		for(int i=0; i<data.size()/2; i++) {
+			OSDepPrint.debug(data.get(i), ref);
+		}
+		// 23.000000000, 54.64
+		//1
+		//WeightTime /WeightDiff
+		//
+		// 23.000000000, 45.23123534
+		// 23.000000000, 45.23123534
+		
+		
+		
+		ArrayList<ArrayList<String>>inputs = new ArrayList<ArrayList<String>>();
+		
+		for(int i=0; i<data.size()/2; i=i+3) {
+			ArrayList<String>pointDescription = new ArrayList<String>();
+			String[] coordinates = data.get(i).split(",");
+			pointDescription.add(coordinates[1].replace(" ", ""));
+			pointDescription.add(coordinates[0].replace(" ", ""));
+			String elevation = data.get(i+1);
+			String weigthTime = data.get(i+2);			
+			pointDescription.add(elevation);
+			pointDescription.add(weigthTime);
+			inputs.add(pointDescription);
+			
+		}
+		ArrayList<Path> paths = PathingInterface.getNewRoutes(inputs, client_uid);
+		
+		XMLObject xmlret = new XMLObject();
+		paths.forEach(path->{
+			path.getVertices().forEach(vertex->{
+				xmlret.addElement(vertex.Storage.getLatitude() + ", " + vertex.Storage.getLongitude());
+			});
+			xmlret.addElement("end");
+		});
+		
+		
 		
 		checkInterruption();
-		con.writeObject(paths);
+		con.writeObject(xmlret);
 		OSDepPrint.net("Paths successfully uploaded", ref);
+		
 	}
 	
 	public static void checkInterruption() throws InterruptedException {

@@ -7,4 +7,7 @@
     <item name="colorTitle" type="color">#ffffff</item>
     <item name="colorOverflowMenu" type="color">#ffffff</item>
     <item name="black" type="color">#000000</item>
+    <item name="circleStroke" type="color">#1565C0</item>
+    <item name="circleFill" type="color">#1E88E5</item>
+
 </resources>

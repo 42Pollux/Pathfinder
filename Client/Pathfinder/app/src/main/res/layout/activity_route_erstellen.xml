@@ -58,7 +58,7 @@
                 android:layout_weight="5"></org.mapsforge.map.android.view.MapView>
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingBottom="30dp"
@@ -69,25 +69,30 @@
                     android:id="@+id/txtStartpoint"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:maxLines="1"
                     android:layout_marginLeft="2dp"
                     android:layout_weight="3"
 
                     android:hint="Startpunkt" />
 
                 <EditText
+                    android:id="@+id/txtEndpoint"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:maxLines="1"
                     android:layout_marginLeft="2dp"
                     android:layout_weight="3"
 
                     android:hint="Endpunkt" />
 
                 <EditText
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:id="@+id/txtMidpoint"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:maxLines="1"
                     android:layout_marginLeft="2dp"
                     android:layout_weight="3"
-                    android:hint="weiterer Wegpunkt"
+                    android:hint="Weitere Wegpunkte"
                     android:paddingBottom="15dp" />
             </LinearLayout>
             <TextView
@@ -109,11 +114,12 @@
                 />
 
             <Button
+                android:id="@+id/button_berechnen"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="Route berechnen"
                 android:textColor="@color/colorTitle"
-                android:background="@color/colorPrimary"
+                android:backgroundTint="@color/colorPrimary"
                 android:layout_weight="1.5"/>
         </LinearLayout>
     </ScrollView>

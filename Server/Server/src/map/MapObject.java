@@ -138,8 +138,9 @@ public class MapObject {
 		
 		
 		// write header
-		String file_dest = MapObject.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-		file_dest = file_dest.substring(0,  file_dest.length()-10); //server.jar 10 chars
+		//String file_dest = MapObject.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+		//file_dest = file_dest.substring(0,  file_dest.length()-10); //server.jar 10 chars
+		String file_dest = "/home/michael/pathfinder";
 		file_dest = file_dest + "/tmp/" + map_name;
 		FileOutputStream out = new FileOutputStream(file_dest);
 		int new_header_size = 73 - 20 + SUPER_DUPER_MAGIC_4 + getStringSize(header_projection) + getStringSize(header_comment) + getStringSize("Pathfinder Server Application") + (header_zoom_intervals*19);

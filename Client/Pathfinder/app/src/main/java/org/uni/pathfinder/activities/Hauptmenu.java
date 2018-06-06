@@ -2,11 +2,13 @@ package org.uni.pathfinder.activities;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,8 +18,10 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 
 import org.uni.pathfinder.R;
+import org.uni.pathfinder.RequestManager;
 
 public class Hauptmenu extends AppCompatActivity {
+    public static final String SHAREDPREFKEY = "PathfinderPreferences";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +81,23 @@ public class Hauptmenu extends AppCompatActivity {
                 v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
             }
         });
+
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+
+        SharedPreferences spref = getSharedPreferences(SHAREDPREFKEY, Context.MODE_PRIVATE);
+        String uuid = spref.getString("key_uuid",  null);
+        Log.d("DEBUG1", "uid really set to: " + uuid);
+        if((uuid==null)||uuid.equals("0000")){
+            if(RequestManager.isOnline(getApplicationContext())){
+                RequestManager.initialize(getApplicationContext());
+                RequestManager.requestUUID(this);
+                RequestManager.flush();
+            }
+        }
 
     }
 

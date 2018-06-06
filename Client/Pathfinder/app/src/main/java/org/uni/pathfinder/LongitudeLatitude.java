@@ -4,18 +4,18 @@ public class LongitudeLatitude {
 
     private  LongitudeLatitude(){}
 
-    public static Double[] MaxMinByLongitudeLatitudeRadius(double latitude, double longitude, double radiusInM)
+    public static double[] MaxMinByLongitudeLatitudeRadius(double latitude, double longitude, double radiusInM)
     {
         //result[0] := minLat
         //result[1] := minLon
         //result[2] := maxLat
         //result[3] := maxLon
-        Double[] result = new Double[4];
+        double[] result = new double[4];
 
-        Double minLat = latitude - (radiusInM / 111130); //one degree of latitude := 111,13 km
-        Double maxLat = latitude + (radiusInM / 111130);
-        Double minLon = longitude - (radiusInM / (Math.cos(latitude)*111130)); //the degree of longitude depends on the current latitude
-        Double maxLon = longitude - (radiusInM / (Math.cos(latitude)*111130));
+        double minLat = latitude - (radiusInM / 111130); //one degree of latitude := 111,13 km
+        double maxLat = latitude + (radiusInM / 111130);
+        double minLon = longitude - (radiusInM / (Math.cos(Math.toRadians(latitude))*111130)); //the degree of longitude depends on the current latitude
+        double maxLon = longitude + (radiusInM / (Math.cos(Math.toRadians(latitude))*111130));
 
         //consider if values above/below limits
        minLat = considerLimitsLatitude(minLat);

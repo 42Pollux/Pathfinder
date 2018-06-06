@@ -2,13 +2,19 @@ package org.uni.pathfinder;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import org.uni.pathfinder.activities.Hauptmenu;
+import org.uni.pathfinder.activities.StandortAuswahl;
 import org.uni.pathfinder.network.ConnectionCodes;
 import org.uni.pathfinder.network.Connector;
 import org.uni.pathfinder.network.MapViewInitializer;
@@ -25,11 +31,14 @@ import org.mapsforge.map.layer.renderer.TileRendererLayer;
 import org.mapsforge.map.reader.MapFile;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.view.MapView;
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.uni.pathfinder.network.ConnectionCodes.PATH;
+import static org.uni.pathfinder.network.ConnectionCodes.REGISTER;
 import static org.uni.pathfinder.network.ConnectionCodes.SECTOR;
 
 public class RequestManager {
@@ -49,8 +58,23 @@ public class RequestManager {
         createDirectories();
     }
 
-    public static void requestPath(XMLObject xml ) {
+    public static boolean isOnline(Context _context) {
+        ConnectivityManager cm =
+                (ConnectivityManager) _context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
 
+    public static void requestUUID(Activity act) {
+        Request r = new Request(act, appContext, ConnectionCodes.REGISTER);
+        queue_view.put(id_counter, r);
+        id_counter++;
+    }
+
+    public static void requestPath(Activity act, XMLObject xml, View view) {
+        Request r = new Request(act, ConnectionCodes.PATH, xml, view);
+        queue_view.put(id_counter, r);
+        id_counter++;
     }
 
     public static void requestMap(Activity act, byte map_code) {
@@ -113,12 +137,14 @@ public class RequestManager {
 }
 
 class Request {
+    public Context context;
     public byte type;
     public long item_id;
     public View view;
     public Activity act;
     public byte map_code;
     public double[] sector;
+    public XMLObject xml;
 
     public Request(Activity _act, byte _type, long _item_id, View _view) {
         this.type = _type;
@@ -139,6 +165,19 @@ class Request {
         this.view = _view;
         this.act = _act;
     }
+
+    public Request(Activity _act, Context _context, byte _type){
+        this.context = _context;
+        this.type = _type;
+        this.act = _act;
+    }
+
+    public Request(Activity _act, byte _type, XMLObject _xml, View _view){
+        this.view = _view;
+        this.xml = _xml;
+        this.type = _type;
+        this.act = _act;
+    }
 }
 
 
@@ -153,6 +192,8 @@ class Queue implements Runnable {
     private TileRendererLayer helper_trlayer;
     private MapView helper_mapv;
     private MapViewInitializer helper_mapvinit;
+    private Activity helper_act;
+    private XMLObject helper_xml;
 
 
     public Queue(final HashMap<Integer, Request> queue_view){
@@ -207,15 +248,60 @@ class Queue implements Runnable {
                             helper_trlayer = new TileRendererLayer(tile_cache, map_data, helper_mapv.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
                             helper_trlayer.setXmlRenderTheme(InternalRenderTheme.DEFAULT);
                             helper_mapvinit = (MapViewInitializer) data;
+                            Log.d("DEBUG1", "MapViewInitializer data: " + helper_mapvinit.getLatitude() + ", " + helper_mapvinit.getLongitude());
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     helper_mapv.getLayerManager().getLayers().add(helper_trlayer);
                                     helper_mapv.setCenter(new LatLong(helper_mapvinit.getLatitude(), helper_mapvinit.getLongitude()));
                                     helper_mapv.setZoomLevel((byte)helper_mapvinit.getZoomLevel());
+                                    StandortAuswahl.getLoader().setVisibility(View.GONE);
+                                    StandortAuswahl.getCross().setVisibility(View.VISIBLE);
                                 }
                             });
                         }
+                        break;
+                    case REGISTER:
+                        if(!failure){
+                            helper_act = r.act;
+                            SharedPreferences spref = r.context.getSharedPreferences(Hauptmenu.SHAREDPREFKEY, Context.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = spref.edit();
+                            editor.putString("key_uuid", message);
+                            editor.commit();
+                            Log.d("DEBUG1", "HIERHIERHIERHIER " + message);
+
+                            r.act.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(helper_act, "Erfolgreich registriert!", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } else {
+                            helper_act = r.act;
+                            r.act.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(helper_act, "Registrierung fehlgeschlagen!", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                        break;
+                    case PATH:
+                        if(!failure) {
+                            helper_xml = (XMLObject) data;
+                            helper_txtv = (TextView) r.view;
+                            r.act.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    String str = "";
+                                    for(int i=0; i<helper_xml.getDataList().size(); i++) {
+                                        str = str + "\n" + helper_xml.getDataList().get(i);
+                                    }
+                                    helper_txtv.setText(str);
+                                }
+                            });
+                        }
+                        break;
 
                 }
                 queue.remove(request_id);
@@ -235,6 +321,12 @@ class Queue implements Runnable {
                 switch(e.getValue().type){
                     case ConnectionCodes.SECTOR:
                         RequestManager.connector.requestMapSector(e.getKey(), e.getValue().sector, false);
+                        break;
+                    case ConnectionCodes.REGISTER:
+                        RequestManager.connector.requestRegister(e.getKey());
+                        break;
+                    case ConnectionCodes.PATH:
+                        RequestManager.connector.requestPaths(e.getKey(), e.getValue().xml);
                         break;
                 }
                 break;
