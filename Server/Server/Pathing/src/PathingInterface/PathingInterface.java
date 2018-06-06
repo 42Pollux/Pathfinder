@@ -3,6 +3,7 @@ import java.sql.SQLException;
 import java.util.*;
 import Core.*;
 import DatabaseConnection.DatabaseConnection;
+import DatabaseConnection.DatabaseConnectionMongoDB;
 import ErrorHandling.*;
 import Access.*;
 
@@ -295,15 +296,36 @@ public class PathingInterface {
 	{
 		path.getVertices().forEach(vertex->
 		{
-			ArrayList<String> informationToThatVertex = queryAdditionalInformationByVertexID(vertex.Storage.getID());
-			informationToThatVertex.forEach(info-> vertex.Storage.addAdditionalInformation(info));			
+			try{
+				ArrayList<String> informationToThatVertex = queryAdditionalInformationByVertexID(vertex.Storage.getID());
+				informationToThatVertex.forEach(info-> vertex.Storage.addAdditionalInformation(info));			
+			}
+			catch(Exception e){
+				e.printStackTrace();
+				System.out.println(e.getMessage());
+			}
+			
 		});
 		return path;
 	}
 	
-	private static ArrayList<String> queryAdditionalInformationByVertexID(int idOfVertexInDB)
+	private static ArrayList<String> queryAdditionalInformationByVertexID(int idOfVertexInDB) throws Exception
 	{
 		ArrayList<String>result = new ArrayList<String>();
+		DatabaseConnection connection = DatabaseConnection.ByUsernameAndPW("DataFinderGen", "D@t@F!nd3rG3n");
+		DatabaseConnectionMongoDB mongoDbConn = new DatabaseConnectionMongoDB("DataFinderGen", "D@t@F!nd3rG3n");
+		
+		String query = "Select i.LinkIntoMongo as Link, mp.InformationID, v.ID as VertexID From Information i, MappedTo mp, Vertices v "
+				+ "where mp.VertexID = v.ID and v.ID ="+idOfVertexInDB+ ";";
+		ArrayList<ArrayList<String>> queryResultsFromRNDB=connection.executeSelectQuery(query);
+		queryResultsFromRNDB.forEach(line->{
+			String [] newQueryArray = line.get(0).split(":");
+			String queryResultFromNoSQL= mongoDbConn.queryToDB(newQueryArray[0], Integer.parseInt(newQueryArray[1]));
+			if(queryResultFromNoSQL != "no such element")
+			{
+				result.add(queryResultFromNoSQL);
+			}
+		});
 		
 		return result;
 	}
