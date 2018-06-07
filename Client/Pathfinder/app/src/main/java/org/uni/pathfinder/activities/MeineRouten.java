@@ -1,28 +1,22 @@
 package org.uni.pathfinder.activities;
 
-import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import org.uni.pathfinder.ListViewEntry;
 import org.uni.pathfinder.R;
 import org.uni.pathfinder.RequestManager;
-import org.uni.pathfinder.shared.XMLObject;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-
-public class RoutePlanenErgebnisse extends AppCompatActivity {
+public class MeineRouten extends AppCompatActivity {
     private static RelativeLayout loader;
+    private TextView txt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_route_planen_ergebnisse);
+        setContentView(R.layout.activity_meine_routen);
 
         Toolbar customToolbar = (Toolbar) findViewById(R.id.customToolbar);
         setSupportActionBar(customToolbar);
@@ -33,13 +27,18 @@ public class RoutePlanenErgebnisse extends AppCompatActivity {
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-        loader = findViewById(R.id.loadingPanelErgebnisse);
-        TextView txt = findViewById(R.id.testTxtView);
+        loader = findViewById(R.id.loadingPanelMeineRouten);
+        txt = findViewById(R.id.txtViewMeineRouten);
 
-        ListView listView = findViewById(R.id.route_ergebnisse_list);
+    }
+
+
+    @Override
+    public void onStart(){
+        super.onStart();
 
         RequestManager.initialize(getApplicationContext());
-        RequestManager.requestPath(this, RoutePlanen.getData(), txt);
+        RequestManager.requestHistory(this, txt, loader);
         RequestManager.flush();
     }
 }

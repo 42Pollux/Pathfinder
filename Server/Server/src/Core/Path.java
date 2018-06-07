@@ -14,6 +14,7 @@ public class Path {
 	protected LinkedList<Vertex<Storage>> Vertices = new LinkedList<Vertex<Storage>>();
 	protected LinkedList<Edge<Storage>> Edges = new LinkedList<Edge<Storage>>();
 	protected int Distance=0;
+	protected String InsertTime;
 	
 	/**@return returns the shortest path through a given graph, based on the shortest length. It is a necessary condition that all edges are weighted.
 	 *  Uses Dijkstra's algorithm to obtain**/
@@ -178,6 +179,16 @@ public class Path {
 			return true;
 		}			
 		return false;		
+	}
+	
+	public String getTime()
+	{
+		return this.InsertTime;
+	}
+	
+	public void setTime(String time)
+	{
+		this.InsertTime = time;
 	}
 	
 	public LinkedList<Vertex<Storage>> getVertices()

@@ -61,6 +61,89 @@ public class PathingInterface {
 		//this is the hole database graph TODO: write an sql-procedure to find the transitive closure for a particular input vertex
 		UndirectedGraph<Storage> graph = byQueryResults(transitiveClosureQueryResults);
 		//and check if all points from the input are in this graph
+		//UndirectedGraph<Storage> clusterGraph = clusterGraph(graph,throughThisPoints);	
+		//get shortest path through points
+		//map each accessPoint to a current graph. use closestPoints -> the are part of the graph
+		throughThisPoints.forEach(accessPoint->{ 
+			accessPoint.getClosestPoint().ID = graph.getVertices().stream().filter(vertex->vertex.Storage.getID()==
+					accessPoint.getClosestPoint().Storage.getID()).findFirst().get().ID;
+			accessPoint.setClosestPoint(graph.getVertices().stream().filter(vertex->vertex.Storage.getID()==
+					accessPoint.getClosestPoint().Storage.getID()).findFirst().get());
+			OSDepPrint.debug("CP.Name: "+ accessPoint.getClosestPoint().Name + " ID: "+accessPoint.getClosestPoint().ID);
+			});
+		
+		ArrayList<Path> shortestPaths = new ArrayList<Path>();
+		
+		for(int i = 0; i<throughThisPoints.size()-1;i++)
+		{
+			// make n/2 times a new path, because partly shortest paths are shortest paths			
+			shortestPaths.add(new Path(graph,throughThisPoints.get(i).getClosestPoint(),throughThisPoints.get(i+1).getClosestPoint()));
+		}
+		LinkedList<Vertex<Storage>> vertices = new LinkedList<Vertex<Storage>>();
+		LinkedList<Edge<Storage>> edges = new LinkedList<Edge<Storage>>(); 
+				
+		shortestPaths.stream().forEach(path->{
+			path.getEdges().forEach(e->System.out.println("from " +e.U.Name + " to " + e.V.Name +" via " + e.Name));
+			vertices.addAll(path.getVertices());
+			edges.addAll(path.getEdges());
+		});
+		//now result contains the shortest path through the input points 
+		result.add(new Path(graph,vertices,edges));
+		//add an entry into db for that route
+		for(Path p: shortestPaths)
+		{
+			notifyPathInDB(con,p,userID);
+		}
+		return shortestPaths;		
+	}
+	
+	/*public static ArrayList<Path> getNewRoutes(ArrayList<ArrayList<String>> pathThroughPoints, String userID) throws Exception
+	{
+		if(pathThroughPoints.size() <= 1)
+			throw new PathingInterfaceException(0);
+		
+		ArrayList<Path> result = new ArrayList<Path>();
+		ArrayList<AccessPoint> throughThisPoints = new ArrayList<AccessPoint>();
+		//for each pointDescription in pathThroughPoints make an analysis and add it 
+		pathThroughPoints.stream().forEach(pointList->{
+			try {
+				throughThisPoints.add(analyzeInput(pointList));
+			} catch (Exception e) {}});
+		
+		//now find a graph which contains all points from throughThisPoints
+		//need the transitive closure for all vertices in throughThisPoints  
+		DatabaseConnection con = DatabaseConnection.ByUsernameAndPW("DataFinderGen", "D@t@F!nd3rG3n");
+		String query = "";
+		//look for difficulty
+		switch (pathThroughPoints.get(0).get(pathThroughPoints.get(0).size()-1))
+		{
+			//
+			case "WeightDifficulty":
+						//UName (0), ULon(1),ULat(2),UHeight(3),U(4)
+				query = "Select u.Name as UName, u.Longitude as ULon,u.Latitude as ULat ,u.Height as UHeight, uv.U,"
+						//V(5), VName(6),VLon(7), VLat(8), VHeight(9)
+						+ " uv.V,v.Name as VName, v.Longitude as VLon,v.Latitude as VLat,v.Height as VHeight,"
+						//Edge(10), WeightDifficulty(11), MatchID(12), EdgeName(13)
+						+ " uv.Edge, e.WeightDifficulty, uv.MatchID, e.Name as EdgeName"
+						+ " from UVToEdge uv, Vertices u, Vertices v, Edges e "
+						+ "where u.ID = uv.U and v.ID = uv.V and uv.Edge = e.ID;";
+						break;
+			case "WeightTime":
+						//UName (0), ULon(1),ULat(2),UHeight(3),U(4)
+				query= "Select u.Name as UName, u.Longitude as ULon,u.Latitude as ULat ,u.Height as UHeight, uv.U,"
+						//V(5), VName(6),VLon(7), VLat(8), VHeight(9)
+						+ " uv.V, v.Name as VName, v.Longitude as VLon,v.Latitude as VLat,v.Height as VHeight,"
+						//Edge(10), WeightTime(11), MatchID(12), EdgeName(13)
+						+ " uv.Edge, e.WeightTime,uv.MatchID, e.Name as EdgeName"
+						+ " from UVToEdge uv, Vertices u, Vertices v, Edges e"
+						+ " where u.ID = uv.U and v.ID = uv.V and uv.Edge = e.ID;";
+				break;				
+		}
+		//than make a graph
+		ArrayList<ArrayList<String>> transitiveClosureQueryResults = con.executeSelectQuery(query);
+		//this is the hole database graph TODO: write an sql-procedure to find the transitive closure for a particular input vertex
+		UndirectedGraph<Storage> graph = byQueryResults(transitiveClosureQueryResults);
+		//and check if all points from the input are in this graph
 		UndirectedGraph<Storage> clusterGraph = clusterGraph(graph,throughThisPoints);	
 		//get shortest path through points
 		ArrayList<Path> shortestPaths = new ArrayList<Path>();
@@ -92,7 +175,7 @@ public class PathingInterface {
 		
 		return result;
 		
-	}
+	}*/
 	
 	//** this method provides access to a list of paths which are stored in the database for the given userID**//
 	public static ArrayList<Path> getStoredRoutes (String userID) throws Exception
@@ -101,15 +184,15 @@ public class PathingInterface {
 		DatabaseConnection connection = DatabaseConnection.ByUsernameAndPW("DataFinderGen", "D@t@F!nd3rG3n");
 					//	UName (0), ULon(1),ULat(2),UHeight(3),U(4)
 		String query = "Select u.Name as UName, u.Longitude as ULon, u.Latitude as ULat, u.Height as UHei, uv.U,"+
-				//V(5), VName(6),VLon(7), VLat(8), VHeight(9)
-				"uv.V, v.Name as VName, v.Longitude as VLon,v.Latitude as VLat, v.Height as VHei,"+
-				//Edge(10), WeightDifficulty(11) //has no use, MatchID(12), EdgeName(13), RouteID (14)
-				"uv.Edge, e.WeightDifficulty,uv.MatchID, e.Name as EdgeName "
-				+"from UVToEdge uv,"+ 
-				"(Select c.RouteID,c.EdgeID from (Select us.ID as usID, rou.ID as rouID, rou.IDOfUser  from PathfinderUser us, Routes rou where us.UserID = '"+userID+"') t1,"+
-				"Contains c where t1.rouID = c.RouteID)t2,"+
-				"Vertices u, Vertices v, Edges e "+ 
-				"where t2.EdgeID = uv.MatchID and uv.U = u.ID and uv.V = v.ID and uv.Edge = e.ID ;";
+					//V(5),VName(6),Vlon(7),VLat(8),VHei(9)
+				 "uv.V, v.Name as VName, v.Longitude as VLon, v.Latitude as VLat, v.Height as VHei,"+
+					//Edge(10), Diff(11) MatchID(12), EdgeName(13), InsertTime(14)
+				 "uv.Edge, e.WeightDifficulty, uv.MatchID, e.Name as EdgeName, t3.InsertTime "+
+				 "from (select t2.InsertTime, t2.IDOfRoute, c.EdgeID from "+ 
+				"(select r.ID as IDOfRoute, r.IDOfUser, t1.UserID, r.InsertTime from "+ 
+				"(select UserID, ID as IDOfUser from PathfinderUser where UserID ='"+
+				 userID+"') t1, Routes r where t1.IDOfUser = r.IDOfUser)t2, Contains c where c.RouteID =t2.IDOfRoute )t3, Vertices u, Vertices v, Edges e, UVToEdge uv "+
+				 "where t3.EdgeID = uv.MatchID and uv.U = u.ID and uv.V = v.ID and uv.Edge = e.ID;";
 		ArrayList<ArrayList<String>> queryResults = connection.executeSelectQuery(query);
 		ArrayList<UndirectedGraph<Storage>> graphs = new ArrayList<UndirectedGraph<Storage>>();
 		
@@ -130,7 +213,9 @@ public class PathingInterface {
 				LinkedList<Vertex<Storage>> vertices = graph.getVertices();
 				LinkedList<Edge<Storage>> edges = graph.getEdges();				
 				graphs.add(graph);
-				result.add(new Path(graph,vertices,edges));
+				Path p = new Path(graph,vertices,edges);
+				p.setTime(queryResults.get(i).get(14));//set time from the 15th field of queryResult
+				result.add(p);
 				//reduce list if i is not the same like size
 				if(i==queryResults.size()-1)
 				{
@@ -181,7 +266,8 @@ public class PathingInterface {
 					Integer.parseInt(verticeEdgeTable.get(4)),		//U is id from db			
 					Double.parseDouble(verticeEdgeTable.get(1)),		//longitude 
 					Double.parseDouble(verticeEdgeTable.get(2)),		//latitude
-					Double.parseDouble(verticeEdgeTable.get(3))));	//height
+					Double.parseDouble(verticeEdgeTable.get(3)))		//height
+					);	
 			
 			//there is no vertex in vertices where the id is the same like u's
 			if(vertices.stream().filter(vertex->vertex.Storage.getID() == u.Storage.getID()).findFirst().orElse(null)==null)
@@ -207,7 +293,7 @@ public class PathingInterface {
 						vertices.stream().filter(vertex->vertex.Storage.getID() == v.Storage.getID()
 						).findFirst().get() //get vertex v out of vertices 
 				, verticeEdgeTable.get(13), Integer.parseInt(verticeEdgeTable.get(11)));
-				edge.setMatchID(Integer.parseInt(verticeEdgeTable.get(12)));
+				edge.setMatchID(Integer.parseInt(verticeEdgeTable.get(11)));
 				edges.add(edge);				
 			} catch (PathingException e) {
 				e.printStackTrace();
@@ -231,10 +317,10 @@ public class PathingInterface {
 				Storage.getID()).findFirst().get()				
 				);	
 				
-		/**inputPoints.stream().forEach(accessPoint->{	
+		inputPoints.stream().forEach(accessPoint->{	
 			//if closestPoint is not in the cluster search for another point with the shortest euclidean distance (to closestPoint) within the cluster			
 				//map the euclidean distance to every point in the cluster and the current closestPoint
-				ArrayList<KeyValue<Vertex<Storage>,Double>> mappedDistances = new ArrayList<KeyValue<Vertex<Storage>,Double>>();
+			/*	ArrayList<KeyValue<Vertex<Storage>,Double>> mappedDistances = new ArrayList<KeyValue<Vertex<Storage>,Double>>();
 				startCluster.stream().forEach(vertex->{
 					mappedDistances.add(new KeyValue<Vertex<Storage>, Double>(vertex, AccessPoint.getEuclideanDistance(vertex, accessPoint.getInputPoint())));
 				});
@@ -245,10 +331,9 @@ public class PathingInterface {
 				
 				Vertex<Storage> resetClosestPoint = mappedDistances.stream().min(new EuclideanDistanceComparator()).orElse(null).Key;
 				System.out.println("Your input point:"+accessPoint.getInputPoint().Name +" has no connection to your startpoint (according to our database).\n"
-						+ "So we remapped this point to a point within our database");
-				accessPoint.setClosestPoint(resetClosestPoint);
-				OSDepPrint.debug("Set "+accessPoint.getInputPoint().Name + " to this point: " + resetClosestPoint.Name);							
-		});**/ 
+						+ "So we remapped this point to a point within our database");*/
+				accessPoint.setClosestPoint(accessPoint.getClosestPoint());											
+		}); 
 		
 		LinkedList<Edge<Storage>> edges = new LinkedList<Edge<Storage>>();
 		startCluster.stream().forEach(vertex ->{

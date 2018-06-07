@@ -47,8 +47,10 @@ public class Hauptmenu extends AppCompatActivity {
 
         FrameLayout frame_aktuelle_route = (FrameLayout) findViewById(R.id.menu_aktuelle_route);
         FrameLayout frame_neue_route = (FrameLayout) findViewById(R.id.menu_neue_route);
+        FrameLayout frame_verlauf = (FrameLayout) findViewById(R.id.menu_verlauf);
         FrameLayout frame_meine_routen = (FrameLayout) findViewById(R.id.menu_meine_routen);
         FrameLayout frame_wandertipps = (FrameLayout) findViewById(R.id.menu_wandertipps);
+        FrameLayout frame_einstellungen = (FrameLayout) findViewById(R.id.menu_einstellungen);
 
         frame_aktuelle_route.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -75,7 +77,24 @@ public class Hauptmenu extends AppCompatActivity {
             }
         });
 
+        frame_verlauf.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+                Intent newAct = new Intent(Hauptmenu.this, Verlauf.class);
+                Hauptmenu.this.startActivity(newAct);
+            }
+        });
+
+
         frame_wandertipps.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+            }
+        });
+
+        frame_einstellungen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));

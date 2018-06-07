@@ -9,7 +9,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,9 +37,12 @@ import org.mapsforge.map.view.MapView;
 import org.w3c.dom.Text;
 
 import java.io.File;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.uni.pathfinder.network.ConnectionCodes.HISTORY;
 import static org.uni.pathfinder.network.ConnectionCodes.PATH;
 import static org.uni.pathfinder.network.ConnectionCodes.REGISTER;
 import static org.uni.pathfinder.network.ConnectionCodes.SECTOR;
@@ -73,6 +79,12 @@ public class RequestManager {
 
     public static void requestPath(Activity act, XMLObject xml, View view) {
         Request r = new Request(act, ConnectionCodes.PATH, xml, view);
+        queue_view.put(id_counter, r);
+        id_counter++;
+    }
+
+    public static void requestHistory(Activity act, View view, View view2) {
+        Request r = new Request(act, ConnectionCodes.HISTORY, view, view2, appContext);
         queue_view.put(id_counter, r);
         id_counter++;
     }
@@ -141,6 +153,7 @@ class Request {
     public byte type;
     public long item_id;
     public View view;
+    public View view2;
     public Activity act;
     public byte map_code;
     public double[] sector;
@@ -157,6 +170,14 @@ class Request {
         this.type = _type;
         this.map_code = _code;
         this.act = _act;
+    }
+
+    public Request(Activity _act, byte _type, View _view, View _view2, Context _context) {
+        this.type = _type;
+        this.view = _view;
+        this.view2 = _view2;
+        this.act = _act;
+        this.context = _context;
     }
 
     public Request(Activity _act, byte _type, double[] _sector, View _view) {
@@ -185,6 +206,7 @@ class Queue implements Runnable {
     public static volatile int queue_counter = 0;
     HashMap<Integer, Request> queue;
     // helper variables only to avoid 'is accessed from within inner class' compilation error
+    private Context helper_context;
     private Bitmap helper_bmp;
     private ImageView helper_imgv;
     private String helper_txt;
@@ -194,6 +216,9 @@ class Queue implements Runnable {
     private MapViewInitializer helper_mapvinit;
     private Activity helper_act;
     private XMLObject helper_xml;
+    private ListView helper_listv;
+    private ArrayList<ListViewEntry> helper_listventry;
+    private RelativeLayout helper_relativel;
 
 
     public Queue(final HashMap<Integer, Request> queue_view){
@@ -206,7 +231,7 @@ class Queue implements Runnable {
             public void onNetworkingResult(int request_id, String message, Object data, boolean failure) {
                 Queue.queue_counter = Queue.queue_counter--;
                 Request r = queue.get(request_id);
-                Log.d("DEBUG1", "HELLU");
+                //Log.d("DEBUG1", "HELLU");
                 switch(r.type){
                     case ConnectionCodes.IMAGE:
                         if(!failure){
@@ -294,7 +319,7 @@ class Queue implements Runnable {
                                 @Override
                                 public void run() {
                                     String str = "";
-                                    for(int i=0; i<helper_xml.getDataList().size(); i++) {
+                                    for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
                                         str = str + "\n" + helper_xml.getDataList().get(i);
                                     }
                                     helper_txtv.setText(str);
@@ -302,7 +327,41 @@ class Queue implements Runnable {
                             });
                         }
                         break;
+                    case HISTORY:
+                        if(!failure) {
+                            helper_context = r.context;
+                            helper_xml = (XMLObject) data;
+                            helper_listv = (ListView) r.view;
+                            helper_relativel = (RelativeLayout) r.view2;
+                            helper_listventry = new ArrayList<>();
+                            r.act.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    int counter = 1;
+                                    for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
+                                        if(helper_xml.getDataList().get(i).equals("end")){
+                                            Log.d("DEBUG1", "Value 1:" + helper_xml.getDataList().get(i-1));
+                                            Log.d("DEBUG1", "Value 2:" + helper_xml.getDataList().get(i-2));
+                                            helper_listventry.add(new ListViewEntry("Route " + counter, helper_xml.getDataList().get(i-1), String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-2)))));
+                                            counter++;
+                                        }
 
+                                    }
+                                    helper_relativel.setVisibility(View.GONE);
+                                    ListViewAdapter adapter = new ListViewAdapter(helper_listventry, helper_context);
+                                    helper_listv.setAdapter(adapter);
+                                    helper_listv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                        @Override
+                                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                                            ListViewEntry dataModel = helper_listventry.get(position);
+                                            // do stuff
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        break;
                 }
                 queue.remove(request_id);
                 // get data TODO implement
@@ -327,6 +386,9 @@ class Queue implements Runnable {
                         break;
                     case ConnectionCodes.PATH:
                         RequestManager.connector.requestPaths(e.getKey(), e.getValue().xml);
+                        break;
+                    case ConnectionCodes.HISTORY:
+                        RequestManager.connector.requestHistory(e.getKey());
                         break;
                 }
                 break;

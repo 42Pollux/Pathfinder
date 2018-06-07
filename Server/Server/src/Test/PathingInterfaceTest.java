@@ -13,25 +13,26 @@ public class PathingInterfaceTest {
 		//find way from v0->v8->v15 (correspond the test cluster manual for more informations)
 		ArrayList<ArrayList<String>>inputsForObject1 = new ArrayList<ArrayList<String>>();
 		ArrayList<String>pointDescription = new ArrayList<String>();
-		pointDescription.add("0.0");
-		pointDescription.add("0.0");
+		pointDescription.add("11.977499"); //Lati
+		pointDescription.add("53.899855");	//lon	
 		pointDescription.add("0.0");
 		pointDescription.add("WeightTime");
 		inputsForObject1.add(pointDescription);
 		
 		pointDescription = new ArrayList<String>();		
-		pointDescription.add("31.0");
-		pointDescription.add("28.0");
-		pointDescription.add("27.0");
+		pointDescription.add("12.001915");
+		pointDescription.add("53.903084");		
+		pointDescription.add("0");
 		pointDescription.add("WeightTime");
 		inputsForObject1.add(pointDescription);
 
 		pointDescription = new ArrayList<String>();		
-		pointDescription.add("91");		//lon
-		pointDescription.add("88");		//lat
-		pointDescription.add("86");		//height /ele
+		pointDescription.add("12.05234");
+		pointDescription.add("53.895478");		
+		pointDescription.add("0");
 		pointDescription.add("WeightTime");
 		inputsForObject1.add(pointDescription);		
+			
 		
 		ArrayList<Path> testobject1= PathingInterface.getNewRoutes(inputsForObject1, "testuser0"); 
 		testobject1.forEach(path->{

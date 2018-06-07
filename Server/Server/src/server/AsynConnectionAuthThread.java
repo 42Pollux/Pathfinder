@@ -7,6 +7,7 @@ package server;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import exceptions.ConnectionTimeoutException;
@@ -16,6 +17,7 @@ import helper.OSDepPrint;
 import network.ConnectionCodes;
 import org.uni.pathfinder.shared.XMLObject;
 
+import Access.AccessPoint;
 import Core.Path;
 import PathingInterface.PathingInterface;
 import network.Connector;
@@ -121,6 +123,8 @@ public class AsynConnectionAuthThread extends Thread {
 										break;
 		case ConnectionCodes.PATH:		respondPath(); 					//make new route
 										break;
+		case ConnectionCodes.HISTORY:	respondHistory();
+										break;
 		case ConnectionCodes.RETRY:		OSDepPrint.net("Retry requested", ref);
 										con.retry();
 										break;
@@ -216,8 +220,6 @@ public class AsynConnectionAuthThread extends Thread {
 	private void respondPath() throws Exception {
 		OSDepPrint.net("Pathing request", ref);
 		
-		// TODO reference to pathing calculations
-		
 		// responding pattern for paths
 		XMLObject xml = (XMLObject) con.readObject();
 		ArrayList<String> data = xml.getDataList();
@@ -225,14 +227,7 @@ public class AsynConnectionAuthThread extends Thread {
 			OSDepPrint.debug(data.get(i), ref);
 		}
 		// 23.000000000, 54.64
-		//1
-		//WeightTime /WeightDiff
-		//
-		// 23.000000000, 45.23123534
-		// 23.000000000, 45.23123534
-		
-		
-		
+		//1		
 		ArrayList<ArrayList<String>>inputs = new ArrayList<ArrayList<String>>();
 		
 		for(int i=0; i<data.size()/2; i=i+3) {
@@ -254,6 +249,10 @@ public class AsynConnectionAuthThread extends Thread {
 			path.getVertices().forEach(vertex->{
 				xmlret.addElement(vertex.Storage.getLatitude() + ", " + vertex.Storage.getLongitude());
 			});
+			path.getEdges().forEach(edge->{
+				xmlret.addElement("Name: " + edge.Name);
+			});
+			
 			xmlret.addElement("end");
 		});
 		
@@ -263,6 +262,43 @@ public class AsynConnectionAuthThread extends Thread {
 		con.writeObject(xmlret);
 		OSDepPrint.net("Paths successfully uploaded", ref);
 		
+	}
+	
+	private void respondHistory() throws Exception {
+		OSDepPrint.net("History request", ref);
+		
+		// responding pattern for paths
+		String uid =  con.getTextResponse();
+		
+		ArrayList<Path> paths = PathingInterface.getStoredRoutes(uid);
+		
+		XMLObject xmlret = new XMLObject();
+		double distance = 0.0;
+//		paths.forEach(path->{
+//			path.getVertices().forEach(vertex->{
+//				xmlret.addElement(vertex.Storage.getLatitude() + ", " + vertex.Storage.getLongitude());
+//			});
+//			path.getEdges().forEach(edge ->{
+//				
+//			});
+//			xmlret.addElement(path.getTime());
+//			xmlret.addElement("end");
+//		});
+		
+		for(int i=0; i<paths.size(); i++) {
+			for(int j=0; j<paths.get(i).getVertices().size(); j++) {
+				xmlret.addElement(paths.get(i).getVertices().get(j).Storage.getLatitude() + ", " + paths.get(i).getVertices().get(j).Storage.getLongitude());
+			}
+			for(int j=0; j<paths.get(i).getEdges().size(); j++) {
+				distance += AccessPoint.getEuclideanDistance(paths.get(i).getEdges().get(j).U, paths.get(i).getEdges().get(j).V);
+			}
+			xmlret.addElement(distance + "");
+			xmlret.addElement(paths.get(i).getTime());
+			xmlret.addElement("end");
+		}
+		
+		con.writeObject(xmlret);
+		OSDepPrint.net("History successfully uploaded", ref);
 	}
 	
 	public static void checkInterruption() throws InterruptedException {

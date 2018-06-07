@@ -11,6 +11,7 @@ public class Storage {
 	protected double Latitude;
 	protected double Height;
 	protected ArrayList<String> AdditionalInformation = new ArrayList<String>();
+	protected String InsertTime; 
 	
 	//meta objects as another field?
 	
@@ -21,6 +22,16 @@ public class Storage {
 		this.Longitude = longitude;
 		this.Latitude = latitude;
 		this.Height = height;
+	}
+	
+	public Storage(String name,int id,double longitude, double latitude, double height, String time)
+	{
+		this.Name = name;
+		this.setID(id);
+		this.Longitude = longitude;
+		this.Latitude = latitude;
+		this.Height = height;
+		this.InsertTime = time;
 	}
 	
 	public double getLongitude()
@@ -55,5 +66,10 @@ public class Storage {
 	{
 		if(info != "")
 			this.AdditionalInformation.add(info);
+	}
+	
+	public String getTime()
+	{
+		return this.InsertTime;
 	}
 }

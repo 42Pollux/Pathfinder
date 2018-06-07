@@ -133,6 +133,11 @@ public class Connector {
     public void requestRegister(int thread_id){
         new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id, ConnectionCodes.REGISTER)).start();
     }
+
+    // request history
+    public void requestHistory(int thread_id) {
+        new Thread(new ThreadRequest(this.app_context, onNetworkingFinished, onNetworkingProgress, thread_id, ConnectionCodes.HISTORY)).start();
+    }
 }
 
 class ThreadRequest implements Runnable, NetworkingThreadFinishListener, NetworkingConsoleListener {
@@ -332,6 +337,9 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
                 case ConnectionCodes.PATH:
                     requestPaths(xml_global);
                     break;
+                case ConnectionCodes.HISTORY:
+                    requestHistory();
+                    break;
             }
         }
     }
@@ -466,6 +474,17 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         // request pattern for paths
         writeCode(ConnectionCodes.PATH);
         writeObject(xml);
+
+        XMLObject result = (XMLObject) receiveObject();
+        onNetworkingFinished.onNetworkingResult(thread_id_global, null, result, false);
+    }
+
+    private void requestHistory() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException {
+        debug_log("Requested: History");
+
+        // request pattern for history
+        writeCode(ConnectionCodes.HISTORY);
+        writeText(client_uid);
 
         XMLObject result = (XMLObject) receiveObject();
         onNetworkingFinished.onNetworkingResult(thread_id_global, null, result, false);

@@ -20,6 +20,7 @@ public class DatabaseConnection {
 				DatabaseConnection result = new DatabaseConnection();
 																//			//IP to connect:port/databaseName
 				result.Connection = DriverManager.getConnection("jdbc:mysql://localhost/Pathfinder", yourUsername, yourPassword);
+				
 				return result;
 			}catch (Exception e)
 			{

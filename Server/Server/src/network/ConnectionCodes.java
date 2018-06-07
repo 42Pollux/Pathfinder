@@ -24,6 +24,7 @@ public class ConnectionCodes {
     public static final byte TEXT = 24;     // request a ressource text file
     public static final byte PATH = 25;     // request a pathing calculation
     public static final byte OBJECT = 26;   // request a custom object
+    public static final byte HISTORY = 27;	// request old paths
 
     // specific map codes used in the request method
     public static final byte MAP_MV = 101;	// Mecklenburg-Vorpommern

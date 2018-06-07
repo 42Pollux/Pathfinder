@@ -40,13 +40,20 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
 
         switch (v.getId())
         {
-            case R.id.icon:
+            case R.id.favourite:
+                // TODO favourite
+                ImageView imgv = (ImageView) v;
+                imgv.setBackgroundResource(R.drawable.ic_heart_grey600_24dp);
 
                 break;
         }
     }
 
     private int lastPosition = -1;
+
+    public ArrayList<ListViewEntry> getDataSet() {
+        return dataSet;
+    }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
@@ -64,7 +71,6 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
             convertView = inflater.inflate(R.layout.list_element, parent, false);
             viewHolder.txtName = (TextView) convertView.findViewById(R.id.firstLine);
             viewHolder.txtHeigthDistance = (TextView) convertView.findViewById(R.id.secondLine);
-            viewHolder.info = (ImageView) convertView.findViewById(R.id.icon);
 
             result=convertView;
 
@@ -79,9 +85,7 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
         lastPosition = position;
 
         viewHolder.txtName.setText(dataModel.getName());
-        viewHolder.txtHeigthDistance.setText(dataModel.getHeigth() + ", " + dataModel.getDistance());
-        viewHolder.info.setOnClickListener(this);
-        viewHolder.info.setTag(position);
+        viewHolder.txtHeigthDistance.setText(dataModel.getDatum() + ", " + dataModel.getDistance() + "km");
         // Return the completed view to render on screen
         return convertView;
     }

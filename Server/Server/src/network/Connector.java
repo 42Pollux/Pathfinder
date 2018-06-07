@@ -211,7 +211,7 @@ public class Connector {
 	 * @throws ConnectionUnexpectedlyClosedException
 	 * @throws InterruptedException 
 	 */
-	private String getTextResponse() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, InterruptedException{
+	public String getTextResponse() throws ConnectionTimeoutException, ConnectionUnexpectedlyClosedException, InterruptedException{
 		String response = "";
 		int timeout = 0;
 		

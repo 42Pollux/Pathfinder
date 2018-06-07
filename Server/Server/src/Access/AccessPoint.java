@@ -67,16 +67,7 @@ public class AccessPoint {
 		/**@return returns the euclidean distance between to vertices**/
 		public static double getEuclideanDistance(Vertex<Storage>v1,Vertex<Storage>v2)
 		{
-			double result = 0.0;
-			
-			Storage v1Storage = v1.Storage;
-			Storage v2Storage = v2.Storage;
-			
-			result = Math.sqrt((	
-						Math.pow((v2Storage.getLongitude() - v1Storage.getLongitude()),2.0) + 
-						Math.pow((v2Storage.getLatitude() - v1Storage.getLatitude()),2.0) +
-						Math.pow((v2Storage.getHeight() - v1Storage.getHeight()),2.0)));
-			return result;
+			return LongitudeLatitudeDistance.Distance(v1, v2);
 		}
 		
 		private ArrayList<Vertex<Storage>> queryDatabaseForAccessPointsByCoordinates(DatabaseConnection connection)
