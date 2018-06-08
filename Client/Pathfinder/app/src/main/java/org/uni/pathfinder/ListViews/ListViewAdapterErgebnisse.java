@@ -1,4 +1,4 @@
-package org.uni.pathfinder;
+package org.uni.pathfinder.ListViews;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,11 +10,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.uni.pathfinder.R;
+
 import java.util.ArrayList;
 
-public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View.OnClickListener{
+public class ListViewAdapterErgebnisse extends ArrayAdapter<ListViewEntryErgebnisse> implements View.OnClickListener{
 
-    private ArrayList<ListViewEntry> dataSet;
+    private ArrayList<ListViewEntryErgebnisse> dataSet;
     Context mContext;
 
     // View lookup cache
@@ -24,8 +26,8 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
         ImageView info;
     }
 
-    public ListViewAdapter(ArrayList<ListViewEntry> data, Context context) {
-        super(context, R.layout.list_element, data);
+    public ListViewAdapterErgebnisse(ArrayList<ListViewEntryErgebnisse> data, Context context) {
+        super(context, R.layout.list_element_ergebnisse, data);
         this.dataSet = data;
         this.mContext = context;
 
@@ -36,7 +38,7 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
 
         int position = (Integer) v.getTag();
         Object object= getItem(position);
-        ListViewEntry dataModel = (ListViewEntry) object;
+        ListViewEntryVerlauf dataModel = (ListViewEntryVerlauf) object;
 
         switch (v.getId())
         {
@@ -51,14 +53,14 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
 
     private int lastPosition = -1;
 
-    public ArrayList<ListViewEntry> getDataSet() {
+    public ArrayList<ListViewEntryErgebnisse> getDataSet() {
         return dataSet;
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // Get the data item for this position
-        ListViewEntry dataModel = getItem(position);
+        ListViewEntryErgebnisse dataModel = getItem(position);
         // Check if an existing view is being reused, otherwise inflate the view
         ViewHolder viewHolder; // view lookup cache stored in tag
 
@@ -68,7 +70,7 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
 
             viewHolder = new ViewHolder();
             LayoutInflater inflater = LayoutInflater.from(getContext());
-            convertView = inflater.inflate(R.layout.list_element, parent, false);
+            convertView = inflater.inflate(R.layout.list_element_verlauf, parent, false);
             viewHolder.txtName = (TextView) convertView.findViewById(R.id.firstLine);
             viewHolder.txtHeigthDistance = (TextView) convertView.findViewById(R.id.secondLine);
 

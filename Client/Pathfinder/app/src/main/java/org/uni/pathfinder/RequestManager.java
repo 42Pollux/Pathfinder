@@ -16,6 +16,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.uni.pathfinder.ListViews.ListViewAdapterVerlauf;
+import org.uni.pathfinder.ListViews.ListViewEntryVerlauf;
 import org.uni.pathfinder.activities.Hauptmenu;
 import org.uni.pathfinder.activities.StandortAuswahl;
 import org.uni.pathfinder.network.ConnectionCodes;
@@ -34,18 +36,13 @@ import org.mapsforge.map.layer.renderer.TileRendererLayer;
 import org.mapsforge.map.reader.MapFile;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.view.MapView;
-import org.w3c.dom.Text;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.uni.pathfinder.network.ConnectionCodes.HISTORY;
-import static org.uni.pathfinder.network.ConnectionCodes.PATH;
-import static org.uni.pathfinder.network.ConnectionCodes.REGISTER;
-import static org.uni.pathfinder.network.ConnectionCodes.SECTOR;
+import static org.uni.pathfinder.network.ConnectionCodes.*;
 
 public class RequestManager {
     private static Thread q;
@@ -77,8 +74,8 @@ public class RequestManager {
         id_counter++;
     }
 
-    public static void requestPath(Activity act, XMLObject xml, View view) {
-        Request r = new Request(act, ConnectionCodes.PATH, xml, view);
+    public static void requestPath(Activity act, XMLObject xml, View view, View view2) {
+        Request r = new Request(act, ConnectionCodes.PATH, xml, view, view2, appContext);
         queue_view.put(id_counter, r);
         id_counter++;
     }
@@ -102,13 +99,13 @@ public class RequestManager {
     }
 
     public static void requestImage(Activity act, long image_id, View view) {
-        Request r = new Request(act, ConnectionCodes.IMAGE, image_id, view);
+        Request r = new Request(act, IMAGE, image_id, view);
         queue_view.put(id_counter, r);
         id_counter++;
     }
 
     public static void requestText(Activity act, long text_id, View view) {
-        Request r = new Request(act, ConnectionCodes.TEXT, text_id, view);
+        Request r = new Request(act, TEXT, text_id, view);
         queue_view.put(id_counter, r);
         id_counter++;
     }
@@ -134,6 +131,9 @@ public class RequestManager {
         });
     }
 
+    /**
+     * Creates the required resource directories.
+     */
     private static void createDirectories(){
         String res_dir = appContext.getFilesDir().getAbsolutePath() + "/res";
         String map_dir = appContext.getFilesDir().getAbsolutePath() + "/map";
@@ -159,6 +159,7 @@ class Request {
     public double[] sector;
     public XMLObject xml;
 
+    // image/text
     public Request(Activity _act, byte _type, long _item_id, View _view) {
         this.type = _type;
         this.item_id = _item_id;
@@ -166,12 +167,14 @@ class Request {
         this.act = _act;
     }
 
+    // map
     public Request(Activity _act, byte _type, byte _code) {
         this.type = _type;
         this.map_code = _code;
         this.act = _act;
     }
 
+    // verlauf/meineRouten
     public Request(Activity _act, byte _type, View _view, View _view2, Context _context) {
         this.type = _type;
         this.view = _view;
@@ -180,6 +183,7 @@ class Request {
         this.context = _context;
     }
 
+    // submap/sector
     public Request(Activity _act, byte _type, double[] _sector, View _view) {
         this.type = _type;
         this.sector = _sector;
@@ -187,17 +191,22 @@ class Request {
         this.act = _act;
     }
 
+    // UUID
     public Request(Activity _act, Context _context, byte _type){
         this.context = _context;
         this.type = _type;
         this.act = _act;
     }
 
-    public Request(Activity _act, byte _type, XMLObject _xml, View _view){
+    // paths
+    public Request(Activity _act, byte _type, XMLObject _xml, View _view, View _view2, Context _context){
         this.view = _view;
+        this.view2 = _view2;
         this.xml = _xml;
         this.type = _type;
         this.act = _act;
+        this.context = _context;
+
     }
 }
 
@@ -205,7 +214,11 @@ class Request {
 class Queue implements Runnable {
     public static volatile int queue_counter = 0;
     HashMap<Integer, Request> queue;
-    // helper variables only to avoid 'is accessed from within inner class' compilation error
+
+    /*
+    * Helper variables need to be set to work around the 'cannot be accessed from within inner class'
+    * compilation error.
+    * */
     private Context helper_context;
     private Bitmap helper_bmp;
     private ImageView helper_imgv;
@@ -217,7 +230,7 @@ class Queue implements Runnable {
     private Activity helper_act;
     private XMLObject helper_xml;
     private ListView helper_listv;
-    private ArrayList<ListViewEntry> helper_listventry;
+    private ArrayList<ListViewEntryVerlauf> helper_verlauf_listventry;
     private RelativeLayout helper_relativel;
 
 
@@ -226,14 +239,27 @@ class Queue implements Runnable {
         queue = queue_view;
         int i = 0;
 
+        /*
+         * Grab the networking data with asynchronous callbacks. The 'onNetworkingResult' function
+         * is being called whenever a networking task finishes. The returning data is being
+         * identified by the request_id and remapped to the stored request data of type 'Request'.
+         * */
         RequestManager.connector.setOnNetworkingFinished(new NetworkingThreadFinishListener() {
             @Override
             public void onNetworkingResult(int request_id, String message, Object data, boolean failure) {
                 Queue.queue_counter = Queue.queue_counter--;
                 Request r = queue.get(request_id);
-                //Log.d("DEBUG1", "HELLU");
+
+                /*
+                 * Manipulating views from another thread is permitted, therefore we pass the view's activity
+                 * (r.act) into each request to access the 'runOnUiThread' method.
+                 * */
                 switch(r.type){
-                    case ConnectionCodes.IMAGE:
+
+                    /*
+                     * Image request. Loads the received image into the specified image view.
+                     * */
+                    case IMAGE:
                         if(!failure){
                             helper_bmp = BitmapFactory.decodeFile(message);
                             ImageView img = (ImageView) r.view;
@@ -248,7 +274,11 @@ class Queue implements Runnable {
                                 // TODO put placeholder here? e.g. "no image found"-image
                         }
                         break;
-                    case ConnectionCodes.TEXT:
+
+                    /*
+                    * Text request. Loads the received text into the specified text view.
+                    * */
+                    case TEXT:
                         if(!failure){
                             helper_txtv = (TextView) r.view;
                             helper_txt = message;
@@ -262,9 +292,12 @@ class Queue implements Runnable {
                             // TODO put placeholder here?
                         }
                         break;
+
+                    /*
+                     * Sector/Submap request. Loads the received sector/submap into a map view.
+                     * */
                     case SECTOR:
                         if(!failure){
-                            Log.d("DEBUG1", "Hi" + r.sector[0]);
                             helper_mapv = (org.mapsforge.map.android.view.MapView) r.view;
                             TileCache tile_cache = AndroidUtil.createTileCache(r.act, "mapcache", helper_mapv.getModel().displayModel.getTileSize(), 1f,
                                     helper_mapv.getModel().frameBufferModel.getOverdrawFactor());
@@ -286,6 +319,10 @@ class Queue implements Runnable {
                             });
                         }
                         break;
+
+                    /*
+                     * Register request. Sets the newly received UUID of the client in the SharedPreferences.
+                     * */
                     case REGISTER:
                         if(!failure){
                             helper_act = r.act;
@@ -311,50 +348,71 @@ class Queue implements Runnable {
                             });
                         }
                         break;
+
+                    /*
+                    * Path request. Displays the received paths in a list view.
+                    * */
                     case PATH:
                         if(!failure) {
+                            helper_context = r.context;
                             helper_xml = (XMLObject) data;
-                            helper_txtv = (TextView) r.view;
+                            helper_listv = (ListView) r.view;
+                            helper_relativel = (RelativeLayout) r.view2;
+                            helper_verlauf_listventry = new ArrayList<>();
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    String str = "";
+                                    int counter = 1;
                                     for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
-                                        str = str + "\n" + helper_xml.getDataList().get(i);
+                                        // TODO correct implementation
+                                        helper_verlauf_listventry.add(new ListViewEntryVerlauf(helper_xml.getDataList().get(i), "null", "null"));
                                     }
-                                    helper_txtv.setText(str);
+                                    helper_relativel.setVisibility(View.GONE);
+                                    ListViewAdapterVerlauf adapter = new ListViewAdapterVerlauf(helper_verlauf_listventry, helper_context);
+                                    helper_listv.setAdapter(adapter);
+                                    helper_listv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                        @Override
+                                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                                            ListViewEntryVerlauf dataModel = helper_verlauf_listventry.get(position);
+                                            // do stuff
+                                        }
+                                    });
                                 }
                             });
                         }
                         break;
+
+                    /*
+                    * History request. Display the received old paths in a list view.
+                    * */
                     case HISTORY:
                         if(!failure) {
                             helper_context = r.context;
                             helper_xml = (XMLObject) data;
                             helper_listv = (ListView) r.view;
                             helper_relativel = (RelativeLayout) r.view2;
-                            helper_listventry = new ArrayList<>();
+                            helper_verlauf_listventry = new ArrayList<>();
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     int counter = 1;
                                     for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
+                                        Log.d("DEBUG1", "data list size: " + helper_xml.getDataList().size() + ", i: " + i);
                                         if(helper_xml.getDataList().get(i).equals("end")){
-                                            Log.d("DEBUG1", "Value 1:" + helper_xml.getDataList().get(i-1));
-                                            Log.d("DEBUG1", "Value 2:" + helper_xml.getDataList().get(i-2));
-                                            helper_listventry.add(new ListViewEntry("Route " + counter, helper_xml.getDataList().get(i-1), String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-2)))));
+                                            helper_verlauf_listventry.add(new ListViewEntryVerlauf("Route " + counter, helper_xml.getDataList().get(i-1), String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-2)))));
                                             counter++;
                                         }
 
                                     }
                                     helper_relativel.setVisibility(View.GONE);
-                                    ListViewAdapter adapter = new ListViewAdapter(helper_listventry, helper_context);
+                                    ListViewAdapterVerlauf adapter = new ListViewAdapterVerlauf(helper_verlauf_listventry, helper_context);
                                     helper_listv.setAdapter(adapter);
                                     helper_listv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                         @Override
                                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                                            ListViewEntry dataModel = helper_listventry.get(position);
+                                            ListViewEntryVerlauf dataModel = helper_verlauf_listventry.get(position);
                                             // do stuff
                                         }
                                     });
@@ -364,7 +422,6 @@ class Queue implements Runnable {
                         break;
                 }
                 queue.remove(request_id);
-                // get data TODO implement
             }
         });
 
@@ -373,10 +430,11 @@ class Queue implements Runnable {
 
     @Override
     public void run() {
-        Log.d("DEBUG1", "started");
+        /*
+        * This is where the requesting happens. Maximum of three requests at a time.
+        * */
         for(Map.Entry<Integer, Request> e: queue.entrySet()){
             while(queue_counter<3){
-                Log.d("DEBUG1", "switching");
                 switch(e.getValue().type){
                     case ConnectionCodes.SECTOR:
                         RequestManager.connector.requestMapSector(e.getKey(), e.getValue().sector, false);

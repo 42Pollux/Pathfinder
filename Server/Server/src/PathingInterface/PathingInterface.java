@@ -69,7 +69,6 @@ public class PathingInterface {
 					accessPoint.getClosestPoint().Storage.getID()).findFirst().get().ID;
 			accessPoint.setClosestPoint(graph.getVertices().stream().filter(vertex->vertex.Storage.getID()==
 					accessPoint.getClosestPoint().Storage.getID()).findFirst().get());
-			OSDepPrint.debug("CP.Name: "+ accessPoint.getClosestPoint().Name + " ID: "+accessPoint.getClosestPoint().ID);
 			});
 		
 		ArrayList<Path> shortestPaths = new ArrayList<Path>();
@@ -84,17 +83,30 @@ public class PathingInterface {
 				
 		shortestPaths.stream().forEach(path->{
 			path.getEdges().forEach(e->System.out.println("from " +e.U.Name + " to " + e.V.Name +" via " + e.Name));
-			vertices.addAll(path.getVertices());
-			edges.addAll(path.getEdges());
-		});
+			
+			path.getVertices().stream().forEach(vertex->{
+				if(!vertices.contains(vertex))
+				{
+					vertices.add(vertex);
+				}}); //end of vertex lambda
+			path.getEdges().stream().forEach(edge-> {
+				if(!edges.contains(edge))
+				{
+					edges.add(edge);
+				}				
+			});	//end of edge lambda
+			});		//end of path lambda	
+				
 		//now result contains the shortest path through the input points 
 		result.add(new Path(graph,vertices,edges));
 		//add an entry into db for that route
-		for(Path p: shortestPaths)
+		/*for(Path p: shortestPaths)
 		{
 			notifyPathInDB(con,p,userID);
-		}
-		return shortestPaths;		
+		}*/
+		notifyPathInDB(con, result.get(0), userID);
+		
+		return result;	
 	}
 	
 	/*public static ArrayList<Path> getNewRoutes(ArrayList<ArrayList<String>> pathThroughPoints, String userID) throws Exception
@@ -184,26 +196,37 @@ public class PathingInterface {
 		DatabaseConnection connection = DatabaseConnection.ByUsernameAndPW("DataFinderGen", "D@t@F!nd3rG3n");
 					//	UName (0), ULon(1),ULat(2),UHeight(3),U(4)
 		String query = "Select u.Name as UName, u.Longitude as ULon, u.Latitude as ULat, u.Height as UHei, uv.U,"+
-					//V(5),VName(6),Vlon(7),VLat(8),VHei(9)
-				 "uv.V, v.Name as VName, v.Longitude as VLon, v.Latitude as VLat, v.Height as VHei,"+
-					//Edge(10), Diff(11) MatchID(12), EdgeName(13), InsertTime(14)
-				 "uv.Edge, e.WeightDifficulty, uv.MatchID, e.Name as EdgeName, t3.InsertTime "+
-				 "from (select t2.InsertTime, t2.IDOfRoute, c.EdgeID from "+ 
-				"(select r.ID as IDOfRoute, r.IDOfUser, t1.UserID, r.InsertTime from "+ 
-				"(select UserID, ID as IDOfUser from PathfinderUser where UserID ='"+
-				 userID+"') t1, Routes r where t1.IDOfUser = r.IDOfUser)t2, Contains c where c.RouteID =t2.IDOfRoute )t3, Vertices u, Vertices v, Edges e, UVToEdge uv "+
-				 "where t3.EdgeID = uv.MatchID and uv.U = u.ID and uv.V = v.ID and uv.Edge = e.ID;";
+				//V(5), VName(6),VLon(7), VLat(8), VHeight(9)
+				" uv.V, v.Name as VName, v.Longitude as VLon, v.Latitude as VLat, v.Height as VHei,"+
+				//Edge(10), WeightDifficulty(11) //has no use, MatchID(12), EdgeName(13),InsertTime(14), RouteID (15)
+				" uv.Edge,e.WeightDifficulty, uv.MatchID, e.Name as EdgeName, t3.InsertTime , t3.IDOfRoute "
+				+"from (select t2.IDOfRoute, c.EdgeID, t2.InsertTime from "+ 
+				"(select r.ID as IDOfRoute, r.IDOfUser, t1.UserID,r.InsertTime from  "
+				+ "(select UserID, ID as IDOfUser from PathfinderUser where UserID = '"+userID+"') t1,"+
+				"Routes r where t1.IDOfUser = r.IDOfUser)t2, Contains c where c.RouteID =t2.IDOfRoute)t3,"+
+				"Vertices u, Vertices v, Edges e, UVToEdge uv"+ 
+				" where t3.EdgeID = uv.MatchID and uv.U = u.ID and uv.V = v.ID and uv.Edge = e.ID Order By t3.IDOfRoute;";
+				     
 		ArrayList<ArrayList<String>> queryResults = connection.executeSelectQuery(query);
 		ArrayList<UndirectedGraph<Storage>> graphs = new ArrayList<UndirectedGraph<Storage>>();
 		
+		//if a user has no routes, the query result will be empty
+		if(queryResults.isEmpty())
+		{
+			return null;
+		}
+		
 		//make a new graph for every different route id and add it to graphs
 		for(int i = 1; i<queryResults.size()||!queryResults.isEmpty(); i++)
-		{
-			if(queryResults.get(i).get(queryResults.get(i-1).size()-1) != queryResults.get(i-1).get(queryResults.get(i-1).size()-1)
-					||queryResults.size()-1 == i) //is true if the there is only only route in this queryResult
-			{
+			
+		{	//take the last element of row i and compare it with the last element of row i-1  (size()-2 is last interesting element)
+			String a = queryResults.get(i).get(queryResults.get(i).size()-2);
+			String b= queryResults.get(i-1).get(queryResults.get(i-1).size()-2);
+			if(!a.equals(b) || 
+					queryResults.size()-1 == i ) //the last entries 
+			{//if the are different -> different routes detected -> rebuild path
 				//split queryResult and make new graph out of the first list
-				List<ArrayList<String>> sublist = queryResults.subList(0, i+1);
+				List<ArrayList<String>> sublist = queryResults.subList(0, i);
 				ArrayList<ArrayList<String>> sublistAsArrayList = new ArrayList<ArrayList<String>>();
 				sublist.forEach(list->{
 					sublistAsArrayList.add(list);
@@ -211,10 +234,11 @@ public class PathingInterface {
 				
 				UndirectedGraph<Storage> graph = byQueryResults(sublistAsArrayList);
 				LinkedList<Vertex<Storage>> vertices = graph.getVertices();
-				LinkedList<Edge<Storage>> edges = graph.getEdges();				
+				LinkedList<Edge<Storage>> edges = graph.getEdges();
+				
 				graphs.add(graph);
 				Path p = new Path(graph,vertices,edges);
-				p.setTime(queryResults.get(i).get(14));//set time from the 15th field of queryResult
+				p.setTime(queryResults.get(0).get(queryResults.get(0).size()-3));
 				result.add(p);
 				//reduce list if i is not the same like size
 				if(i==queryResults.size()-1)
@@ -223,11 +247,14 @@ public class PathingInterface {
 				}
 				else
 				{
+					//remove the rebuild route from the list 
 					for(int j=0;j<i;j++)
 					{
-						queryResults.remove(j);
+						//pop head
+						queryResults.remove(0);
 					}
-					i=1;
+					//set i = 0 -> next loop it is i=1
+					i=0;
 				}				
 			}			
 		}

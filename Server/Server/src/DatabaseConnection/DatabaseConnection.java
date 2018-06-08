@@ -19,7 +19,7 @@ public class DatabaseConnection {
 				Class.forName("com.mysql.jdbc.Driver").newInstance();
 				DatabaseConnection result = new DatabaseConnection();
 																//			//IP to connect:port/databaseName
-				result.Connection = DriverManager.getConnection("jdbc:mysql://localhost/Pathfinder", yourUsername, yourPassword);
+				result.Connection = DriverManager.getConnection("jdbc:mysql://pollux-server.de/Pathfinder", yourUsername, yourPassword);
 				
 				return result;
 			}catch (Exception e)

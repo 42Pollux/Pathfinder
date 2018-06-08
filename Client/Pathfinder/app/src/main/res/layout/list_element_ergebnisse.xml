@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="?android:attr/listPreferredItemHeight"
+    android:paddingTop="6dp"
+    android:paddingLeft="6dp"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/linearTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/firstLine"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:text="No route found"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/secondLine"
+                android:layout_width="fill_parent"
+                android:layout_height="26dip"
+                android:ellipsize="marquee"
+                android:singleLine="true"
+                android:text="-"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:id="@+id/dividerView"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_marginRight="8dp"
+        android:background="?android:attr/listDivider"
+        />
+
+</LinearLayout>

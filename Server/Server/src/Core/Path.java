@@ -87,7 +87,7 @@ public class Path {
 			//if it couldn't found a cheapest edge, catch...
 			try{
 				this.Edges.addFirst(edgeBetweenThisVertexAndItsAncestor);				
-				this.Distance += Distance + edgeBetweenThisVertexAndItsAncestor.Weight;
+				this.Distance += edgeBetweenThisVertexAndItsAncestor.Weight;
 			}catch(Exception e){}
 			
 			
@@ -108,18 +108,12 @@ public class Path {
 	{
 		this.InGraph = graph;		
 		//take those edges e's where U or V have only one adjacent edge -> this is always an start/end point
-		ArrayList<Vertex<Storage>> startpoints=vertices.stream().filter(startpoint-> startpoint.getDegree() ==1).collect(Collectors.toCollection(ArrayList::new));
-		ArrayList<Path> paths =  new ArrayList<Path>();
-		for(int i= 1; i<startpoints.size();i++)
+		this.Vertices = vertices;
+		this.Edges = edges;
+		for(Edge<Storage> edge :this.Edges)
 		{
-			paths.add(new Path(InGraph,startpoints.get(i-1),startpoints.get(i)));
-		}
-		for(Path path :paths)
-		{
-			this.Vertices.addAll(path.getVertices());
-			this.Edges.addAll(path.getEdges());
-		}
-		
+			this.Distance += edge.Weight;
+		}		
 	}
 	
 	private static ArrayList <KeyValue<Vertex<Storage>, KeyValue<Vertex<Storage>,Integer>>> initialize(Graph<Storage> graph, Vertex<Storage> startpoint)

@@ -285,16 +285,25 @@ public class AsynConnectionAuthThread extends Thread {
 //			xmlret.addElement("end");
 //		});
 		
+		if(paths==null) {
+			con.writeObject(null);
+			OSDepPrint.debug("No paths found", ref);
+		}
+		
 		for(int i=0; i<paths.size(); i++) {
 			for(int j=0; j<paths.get(i).getVertices().size(); j++) {
 				xmlret.addElement(paths.get(i).getVertices().get(j).Storage.getLatitude() + ", " + paths.get(i).getVertices().get(j).Storage.getLongitude());
 			}
 			for(int j=0; j<paths.get(i).getEdges().size(); j++) {
 				distance += AccessPoint.getEuclideanDistance(paths.get(i).getEdges().get(j).U, paths.get(i).getEdges().get(j).V);
+				OSDepPrint.debug("Distance: " + distance);
 			}
 			xmlret.addElement(distance + "");
 			xmlret.addElement(paths.get(i).getTime());
 			xmlret.addElement("end");
+		}
+		for(int i=0; i<xmlret.getDataList().size(); i++) {
+			OSDepPrint.debug(xmlret.getDataList().get(i));
 		}
 		
 		con.writeObject(xmlret);

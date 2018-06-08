@@ -487,6 +487,9 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         writeText(client_uid);
 
         XMLObject result = (XMLObject) receiveObject();
+        if(result==null) {
+            onNetworkingFinished.onNetworkingResult(thread_id_global, null, null, true);
+        }
         onNetworkingFinished.onNetworkingResult(thread_id_global, null, result, false);
     }
 

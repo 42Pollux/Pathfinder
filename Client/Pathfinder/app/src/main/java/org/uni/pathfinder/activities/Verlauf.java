@@ -3,14 +3,11 @@ package org.uni.pathfinder.activities;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import org.uni.pathfinder.ListViewAdapter;
-import org.uni.pathfinder.ListViewEntry;
+import org.uni.pathfinder.ListViews.ListViewEntryVerlauf;
 import org.uni.pathfinder.R;
 import org.uni.pathfinder.RequestManager;
 
@@ -20,7 +17,7 @@ public class Verlauf extends AppCompatActivity {
     private static RelativeLayout loader;
     private TextView txt;
     private ListView listView;
-    private ArrayList<ListViewEntry> dataModels;
+    private ArrayList<ListViewEntryVerlauf> dataModels;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

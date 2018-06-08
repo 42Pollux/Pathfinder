@@ -1,23 +1,17 @@
 package org.uni.pathfinder.activities;
 
-import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
-import org.uni.pathfinder.ListViewEntry;
 import org.uni.pathfinder.R;
 import org.uni.pathfinder.RequestManager;
-import org.uni.pathfinder.shared.XMLObject;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 
 public class RoutePlanenErgebnisse extends AppCompatActivity {
-    private static RelativeLayout loader;
+    private RelativeLayout loader;
+    private ListView listView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,12 +28,17 @@ public class RoutePlanenErgebnisse extends AppCompatActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         loader = findViewById(R.id.loadingPanelErgebnisse);
-        TextView txt = findViewById(R.id.testTxtView);
 
-        ListView listView = findViewById(R.id.route_ergebnisse_list);
+        listView = findViewById(R.id.route_ergebnisse_list);
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
 
         RequestManager.initialize(getApplicationContext());
-        RequestManager.requestPath(this, RoutePlanen.getData(), txt);
+        RequestManager.requestPath(this, RoutePlanen.getData(), listView, loader);
         RequestManager.flush();
     }
 }
