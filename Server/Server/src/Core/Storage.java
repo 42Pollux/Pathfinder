@@ -1,6 +1,8 @@
 package Core;
 import java.util.*;
 
+import ExternalReference.ReferenceObject;
+
 /**this class stores every relevant meta information for the vertices**/
 public class Storage {
 	
@@ -10,7 +12,7 @@ public class Storage {
 	protected double Longitude;
 	protected double Latitude;
 	protected double Height;
-	protected ArrayList<String> AdditionalInformation = new ArrayList<String>();
+	protected ArrayList<ReferenceObject> AdditionalInformation = new ArrayList<ReferenceObject>();
 	protected String InsertTime; 
 	
 	//meta objects as another field?
@@ -57,14 +59,14 @@ public class Storage {
 		ID = iD;
 	}
 	
-	public ArrayList<String> getAdditionalInformation()
+	public ArrayList<ReferenceObject> getAdditionalInformation()
 	{
 		return this.AdditionalInformation;
 	}
 	
-	public void addAdditionalInformation(String info)
+	public void addAdditionalInformation(ReferenceObject info)
 	{
-		if(info != "")
+		if(info != null)
 			this.AdditionalInformation.add(info);
 	}
 	

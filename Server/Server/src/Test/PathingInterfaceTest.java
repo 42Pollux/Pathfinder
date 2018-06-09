@@ -5,6 +5,8 @@ import org.junit.*;
 
 import Access.AccessPoint;
 import Core.*;
+import ExternalReference.PictureReference;
+import ExternalReference.ReferenceObject;
 import PathingInterface.*;
 
 public class PathingInterfaceTest {
@@ -57,6 +59,9 @@ public class PathingInterfaceTest {
 	public void testGetStoredRoutes() throws Exception {
 		ArrayList<Path> paths = PathingInterface.getStoredRoutes("testuser0");
 		
+		if(paths.isEmpty())
+			System.out.println("no paths stored for this user");
+		
 		paths.forEach(path->{
 			System.out.println("New Path: ");
 			path.getEdges().forEach(edge->{
@@ -64,6 +69,21 @@ public class PathingInterfaceTest {
 			});
 		});
 	}
+	
+	
+	@Test
+	public void testGetFurtherInformation()throws Exception{
+		ArrayList<Path> paths = PathingInterface.getStoredRoutes("testuser0");
+		
+		paths.forEach(path->{
+			PathingInterface.getFurtherInformations(path);
+			path.getVertices().forEach(vertex->{
+				vertex.Storage.getAdditionalInformation().forEach(info->{
+					System.out.println("dbID: " + info.getDatabaseID() +" referenceID: " + info.getReferenceID() );
+				});
+			});
+		});
+	}  
 }
 
 

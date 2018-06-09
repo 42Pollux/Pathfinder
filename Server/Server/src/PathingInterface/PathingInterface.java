@@ -1,10 +1,16 @@
 package PathingInterface;
 import java.sql.SQLException;
 import java.util.*;
+
+import com.mysql.cj.xdevapi.Result;
+
 import Core.*;
 import DatabaseConnection.DatabaseConnection;
 import DatabaseConnection.DatabaseConnectionMongoDB;
 import ErrorHandling.*;
+import ExternalReference.PictureReference;
+import ExternalReference.ReferenceObject;
+import ExternalReference.TextReference;
 import helper.OSDepPrint;
 import Access.*;
 
@@ -109,85 +115,6 @@ public class PathingInterface {
 		return result;	
 	}
 	
-	/*public static ArrayList<Path> getNewRoutes(ArrayList<ArrayList<String>> pathThroughPoints, String userID) throws Exception
-	{
-		if(pathThroughPoints.size() <= 1)
-			throw new PathingInterfaceException(0);
-		
-		ArrayList<Path> result = new ArrayList<Path>();
-		ArrayList<AccessPoint> throughThisPoints = new ArrayList<AccessPoint>();
-		//for each pointDescription in pathThroughPoints make an analysis and add it 
-		pathThroughPoints.stream().forEach(pointList->{
-			try {
-				throughThisPoints.add(analyzeInput(pointList));
-			} catch (Exception e) {}});
-		
-		//now find a graph which contains all points from throughThisPoints
-		//need the transitive closure for all vertices in throughThisPoints  
-		DatabaseConnection con = DatabaseConnection.ByUsernameAndPW("DataFinderGen", "D@t@F!nd3rG3n");
-		String query = "";
-		//look for difficulty
-		switch (pathThroughPoints.get(0).get(pathThroughPoints.get(0).size()-1))
-		{
-			//
-			case "WeightDifficulty":
-						//UName (0), ULon(1),ULat(2),UHeight(3),U(4)
-				query = "Select u.Name as UName, u.Longitude as ULon,u.Latitude as ULat ,u.Height as UHeight, uv.U,"
-						//V(5), VName(6),VLon(7), VLat(8), VHeight(9)
-						+ " uv.V,v.Name as VName, v.Longitude as VLon,v.Latitude as VLat,v.Height as VHeight,"
-						//Edge(10), WeightDifficulty(11), MatchID(12), EdgeName(13)
-						+ " uv.Edge, e.WeightDifficulty, uv.MatchID, e.Name as EdgeName"
-						+ " from UVToEdge uv, Vertices u, Vertices v, Edges e "
-						+ "where u.ID = uv.U and v.ID = uv.V and uv.Edge = e.ID;";
-						break;
-			case "WeightTime":
-						//UName (0), ULon(1),ULat(2),UHeight(3),U(4)
-				query= "Select u.Name as UName, u.Longitude as ULon,u.Latitude as ULat ,u.Height as UHeight, uv.U,"
-						//V(5), VName(6),VLon(7), VLat(8), VHeight(9)
-						+ " uv.V, v.Name as VName, v.Longitude as VLon,v.Latitude as VLat,v.Height as VHeight,"
-						//Edge(10), WeightTime(11), MatchID(12), EdgeName(13)
-						+ " uv.Edge, e.WeightTime,uv.MatchID, e.Name as EdgeName"
-						+ " from UVToEdge uv, Vertices u, Vertices v, Edges e"
-						+ " where u.ID = uv.U and v.ID = uv.V and uv.Edge = e.ID;";
-				break;				
-		}
-		//than make a graph
-		ArrayList<ArrayList<String>> transitiveClosureQueryResults = con.executeSelectQuery(query);
-		//this is the hole database graph TODO: write an sql-procedure to find the transitive closure for a particular input vertex
-		UndirectedGraph<Storage> graph = byQueryResults(transitiveClosureQueryResults);
-		//and check if all points from the input are in this graph
-		UndirectedGraph<Storage> clusterGraph = clusterGraph(graph,throughThisPoints);	
-		//get shortest path through points
-		ArrayList<Path> shortestPaths = new ArrayList<Path>();
-		
-		for(int i = 0; i<throughThisPoints.size()-1;i++)
-		{
-			// make n/2 times a new path, because partly shortest paths are shortest paths
-			shortestPaths.add(new Path(clusterGraph,throughThisPoints.get(i).getClosestPoint(),throughThisPoints.get(i+1).getClosestPoint()));
-		}
-		LinkedList<Vertex<Storage>> vertices = new LinkedList<Vertex<Storage>>();
-		LinkedList<Edge<Storage>> edges = new LinkedList<Edge<Storage>>(); 
-				
-		shortestPaths.stream().forEach(path->{
-			try{
-				//do an induction-> take always the last vertex out to avoid duplicates
-				//in try catch block, because of the NoSuchElementException for the first step
-				vertices.removeLast();
-			}catch(Exception e)
-			{
-				
-			}			
-			vertices.addAll(path.getVertices());
-			edges.addAll(path.getEdges());
-		});
-		//now result contains the shortest path through the input points 
-		result.add(new Path(clusterGraph,vertices,edges));
-		//add an entry into db for that route
-		notifyPathInDB(con,result.get(0),userID);
-		
-		return result;
-		
-	}*/
 	
 	//** this method provides access to a list of paths which are stored in the database for the given userID**//
 	public static ArrayList<Path> getStoredRoutes (String userID) throws Exception
@@ -331,59 +258,6 @@ public class PathingInterface {
 		return result;
 	}
 	
-	/**this method finds a cluster (subgraph) in which all inputPoints are reachable. Initially unreachable InputPoints will be mapped into the cluster. **/
-	private static UndirectedGraph<Storage> clusterGraph(UndirectedGraph<Storage> graph,ArrayList<AccessPoint> inputPoints) 
-	{		
-		if(graph.getVertices().isEmpty()|| graph.getEdges().isEmpty())
-			return null;
-		
-		//get the cluster of the start point
-		LinkedList<Vertex<Storage>> startCluster = graph.areReachable(
-				//this obtains that we find literally the same object 
-				graph.getVertices().stream().filter(vertex->vertex.Storage.getID() == inputPoints.get(0).getClosestPoint().
-				Storage.getID()).findFirst().get()				
-				);	
-				
-		inputPoints.stream().forEach(accessPoint->{	
-			//if closestPoint is not in the cluster search for another point with the shortest euclidean distance (to closestPoint) within the cluster			
-				//map the euclidean distance to every point in the cluster and the current closestPoint
-			/*	ArrayList<KeyValue<Vertex<Storage>,Double>> mappedDistances = new ArrayList<KeyValue<Vertex<Storage>,Double>>();
-				startCluster.stream().forEach(vertex->{
-					mappedDistances.add(new KeyValue<Vertex<Storage>, Double>(vertex, AccessPoint.getEuclideanDistance(vertex, accessPoint.getInputPoint())));
-				});
-				mappedDistances.forEach(kv->{
-					OSDepPrint.debug(kv.Key.Name + " has distance to " + accessPoint.getClosestPoint().Name +
-							"where distance to InputPoint is: " + AccessPoint.getEuclideanDistance(kv.Key, accessPoint.getClosestPoint()) );
-				});
-				
-				Vertex<Storage> resetClosestPoint = mappedDistances.stream().min(new EuclideanDistanceComparator()).orElse(null).Key;
-				System.out.println("Your input point:"+accessPoint.getInputPoint().Name +" has no connection to your startpoint (according to our database).\n"
-						+ "So we remapped this point to a point within our database");*/
-				accessPoint.setClosestPoint(accessPoint.getClosestPoint());											
-		}); 
-		
-		LinkedList<Edge<Storage>> edges = new LinkedList<Edge<Storage>>();
-		startCluster.stream().forEach(vertex ->{
-			LinkedList<Edge<Storage>> tempEdge = vertex.getEdges();
-			tempEdge.forEach(edge->{
-				if(!edges.contains(edge))
-				{
-					edges.add(edge);
-				}
-			});
-		});
-		//reset edges and vertices graph id back to = -1
-		startCluster.forEach(vertex->{
-			vertex.ID =-1;
-		});
-		edges.forEach(edge->{
-			edge.ID =-1;
-		});
-		
-		UndirectedGraph<Storage> result = new UndirectedGraph<Storage>(startCluster, edges);
-		return result;
-	}
-	
 	private static boolean notifyPathInDB(DatabaseConnection connection,Path pathToNotify, String userID) throws SQLException
 	{
 		try{
@@ -417,7 +291,11 @@ public class PathingInterface {
 		{
 			try{
 				ArrayList<String> informationToThatVertex = queryAdditionalInformationByVertexID(vertex.Storage.getID());
-				informationToThatVertex.forEach(info-> vertex.Storage.addAdditionalInformation(info));			
+				informationToThatVertex.forEach(infoString->{
+					ReferenceObject refObject = analyzeInfo(infoString);
+					if(refObject != null)
+						vertex.Storage.addAdditionalInformation(refObject);
+				});				
 			}
 			catch(Exception e){
 				e.printStackTrace();
@@ -434,11 +312,11 @@ public class PathingInterface {
 		DatabaseConnection connection = DatabaseConnection.ByUsernameAndPW("DataFinderGen", "D@t@F!nd3rG3n");
 		DatabaseConnectionMongoDB mongoDbConn = new DatabaseConnectionMongoDB("DataFinderGen", "D@t@F!nd3rG3n");
 		
-		String query = "Select i.LinkIntoMongo as Link, mp.InformationID, v.ID as VertexID From Information i, MappedTo mp, Vertices v "
-				+ "where mp.VertexID = v.ID and v.ID ="+idOfVertexInDB+ ";";
+		String query =  "select i.LinkIntoMongo as Link, mp.InformationID from Information i, MappedTo mp "
+				+ "where mp.VertexID = "+ idOfVertexInDB  +" and mp.InformationID = i.ID;" ;
 		ArrayList<ArrayList<String>> queryResultsFromRNDB=connection.executeSelectQuery(query);
 		queryResultsFromRNDB.forEach(line->{
-			String [] newQueryArray = line.get(0).split(":");
+			String [] newQueryArray = line.get(0).split(" : ");
 			String queryResultFromNoSQL= mongoDbConn.queryToDB(newQueryArray[0], Integer.parseInt(newQueryArray[1]));
 			if(queryResultFromNoSQL != "no such element")
 			{
@@ -490,4 +368,55 @@ public class PathingInterface {
 		else
 			return false;		
 	}
+	
+	private static ReferenceObject analyzeInfo(String infoString)
+	{
+		ReferenceObject result = null; 
+		
+		// infoString looks like this {"_id" : 34, "pic": 5, "description": "non"}
+		//or like {"_id":1 , "info": "testinfo"}
+		char[]tempCharArray=infoString.toCharArray();
+		LinkedList<String> infoFields = new LinkedList<String>();
+		String aInfoField ="";
+		
+		for(int i = 0; i<tempCharArray.length-1;i++)
+		{	
+			char c = tempCharArray[i];
+			if(c=='{'||c=='"'|| c=='}')
+				continue;
+			// read . means go two steps ahead
+			else if(c=='.')
+				i++;
+			//new field reached
+			else if(c==',')
+			{
+				infoFields.add(aInfoField);
+				aInfoField ="";
+			}
+			else
+				aInfoField += c;
+		}
+		infoFields.add(aInfoField);
+		String flag = infoFields.get(1).split(" : ")[0];
+		
+		switch(flag)
+		{		
+			case " pic":					
+				result = new PictureReference(
+						Integer.parseInt( infoFields.get(1).split(":")[1].split(" ")[1]), 
+						Integer.parseInt(infoFields.get(0).split(":")[1].split(" ")[1]),
+						infoFields.get(2).split(": ")[1]);
+				break;
+			case " info":
+				result = new TextReference(
+						Integer.parseInt(infoFields.get(1).split(":")[1].split(" ")[1]),
+						Integer.parseInt(infoFields.get(0).split(":")[1].split(" ")[1]));
+				break;
+			default:
+				OSDepPrint.debug("couldn't interpret db entry");
+		}
+		
+		return result;		
+	}
+	
 }

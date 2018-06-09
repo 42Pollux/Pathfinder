@@ -15,7 +15,7 @@ public class DatabaseConnectionMongoDB {
 		
 		public DatabaseConnectionMongoDB(String username, String pwd) throws UnknownHostException {			
 			
-			try{
+			try{											//TODO: switch to localhost, if running on server or to 62.113.206.126
 				Client=new MongoClient(new MongoClientURI("mongodb://localhost:27017"));
 				Database= Client.getDB("Pathfinder");
 				MongoCredential credential = MongoCredential.createMongoCRCredential(username, "Pathfinder", pwd.toCharArray());
@@ -47,8 +47,7 @@ public class DatabaseConnectionMongoDB {
 				{					
 					cursor.close();
 					return string;
-				}
-					
+				}					
 			}
 			return "no such element";
 		}
