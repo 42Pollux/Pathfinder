@@ -34,31 +34,13 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <FrameLayout
+        <ListView
+            android:id="@+id/listViewMeineRouten"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <RelativeLayout
-                android:id="@+id/loadingPanelMeineRouten"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center" >
-
-                <ProgressBar
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:indeterminate="true" />
-            </RelativeLayout>
-
-            <TextView
-                android:id="@+id/txtViewMeineRouten"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-
-
-        </FrameLayout>
+            android:layout_height="wrap_content"
+            android:paddingTop="6dp"
+            android:paddingLeft="6dp"
+            android:dividerHeight="2dp"></ListView>
     </LinearLayout>
 
 </LinearLayout>

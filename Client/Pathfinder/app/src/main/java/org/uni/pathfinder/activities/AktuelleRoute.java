@@ -25,8 +25,8 @@ public class AktuelleRoute extends AppCompatActivity {
         getSupportActionBar().setIcon(R.drawable.pathfinder_weiss_logo_small);
 
         // those 2 lines add the back arrow
-        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        //getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         // status bar color

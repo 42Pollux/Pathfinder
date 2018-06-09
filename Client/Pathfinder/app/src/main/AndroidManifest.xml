@@ -39,10 +39,22 @@
             android:configChanges="orientation"
             android:parentActivityName=".activities.RoutePlanen"
             android:screenOrientation="portrait" />
-        <activity android:name=".activities.RoutePlanenErgebnisse" />
-        <activity android:name=".activities.Verlauf" />
-        <activity android:name=".activities.Einstellungen" />
-        <activity android:name=".activities.MeineRouten"></activity>
+        <activity android:name=".activities.RoutePlanenErgebnisse"
+            android:configChanges="orientation"
+            android:parentActivityName=".activities.RoutePlanen"
+            android:screenOrientation="portrait" />
+        <activity android:name=".activities.Verlauf"
+            android:configChanges="orientation"
+            android:parentActivityName=".activities.Hauptmenu"
+            android:screenOrientation="portrait" />
+        <activity android:name=".activities.Einstellungen"
+            android:configChanges="orientation"
+            android:parentActivityName=".activities.Hauptmenu"
+            android:screenOrientation="portrait" />
+        <activity android:name=".activities.MeineRouten"
+            android:configChanges="orientation"
+            android:parentActivityName=".activities.Hauptmenu"
+            android:screenOrientation="portrait" ></activity>
     </application>
 
 </manifest>

@@ -207,7 +207,7 @@ public class AsynConnectionAuthThread extends Thread {
 		
 		// responding pattern for objects
 		long item_id = con.readLong();
-		Object obj;
+		Object obj = null;
 		if((obj = ResourceManager.returnObject(item_id))==null) {
 			// invalid id
 			OSDepPrint.net("Invalid id for object request", ref);
@@ -245,17 +245,19 @@ public class AsynConnectionAuthThread extends Thread {
 		ArrayList<Path> paths = PathingInterface.getNewRoutes(inputs, client_uid);
 		
 		XMLObject xmlret = new XMLObject();
-		paths.forEach(path->{
-			path.getVertices().forEach(vertex->{
-				xmlret.addElement(vertex.Storage.getLatitude() + ", " + vertex.Storage.getLongitude());
-			});
-			path.getEdges().forEach(edge->{
-				xmlret.addElement("Name: " + edge.Name);
-			});
-			
+		double distance = 0.0;
+		for(int i=0; i<paths.size(); i++) {
+			for(int j=0; j<paths.get(i).getVertices().size(); j++) {
+				xmlret.addElement(paths.get(i).getVertices().get(j).Storage.getLatitude() + ", " + paths.get(i).getVertices().get(j).Storage.getLongitude());
+			}
+			for(int j=0; j<paths.get(i).getEdges().size(); j++) {
+				distance += AccessPoint.getEuclideanDistance(paths.get(i).getEdges().get(j).U, paths.get(i).getEdges().get(j).V);
+				xmlret.addElement("Name: " + paths.get(i).getEdges().get(j).Name);
+				OSDepPrint.debug("Distance: " + distance);
+			}
+			xmlret.addElement(distance + "");
 			xmlret.addElement("end");
-		});
-		
+		}
 		
 		
 		checkInterruption();

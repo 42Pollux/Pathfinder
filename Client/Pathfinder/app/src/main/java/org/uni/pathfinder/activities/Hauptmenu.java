@@ -22,6 +22,8 @@ import org.uni.pathfinder.RequestManager;
 
 public class Hauptmenu extends AppCompatActivity {
     public static final String SHAREDPREFKEY = "PathfinderPreferences";
+    public static Context APPCONTEXT;
+    public static boolean INIT = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +46,8 @@ public class Hauptmenu extends AppCompatActivity {
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(ContextCompat.getColor(this,R.color.colorPrimaryDark));
         }
+
+        APPCONTEXT = getApplicationContext();
 
         FrameLayout frame_aktuelle_route = (FrameLayout) findViewById(R.id.menu_aktuelle_route);
         FrameLayout frame_neue_route = (FrameLayout) findViewById(R.id.menu_neue_route);
@@ -74,6 +78,8 @@ public class Hauptmenu extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
+                Intent newAct = new Intent(Hauptmenu.this, MeineRouten.class);
+                Hauptmenu.this.startActivity(newAct);
             }
         });
 
@@ -107,9 +113,12 @@ public class Hauptmenu extends AppCompatActivity {
     public void onStart(){
         super.onStart();
 
+        if(INIT) {
+            MeineRouten.setSavedRoutes(MeineRouten.readSavedRoutes(), true);
+        }
         SharedPreferences spref = getSharedPreferences(SHAREDPREFKEY, Context.MODE_PRIVATE);
         String uuid = spref.getString("key_uuid",  null);
-        Log.d("DEBUG1", "uid really set to: " + uuid);
+        Log.d("DEBUG1", "uid set to: " + uuid);
         if((uuid==null)||uuid.equals("0000")){
             if(RequestManager.isOnline(getApplicationContext())){
                 RequestManager.initialize(getApplicationContext());
@@ -118,6 +127,7 @@ public class Hauptmenu extends AppCompatActivity {
             }
         }
 
+        INIT = false;
     }
 
     @Override
@@ -141,4 +151,5 @@ public class Hauptmenu extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
 }

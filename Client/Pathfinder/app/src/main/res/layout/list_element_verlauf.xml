@@ -41,7 +41,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1">
             <ImageView
-                android:id="@+id/favourite"
+                android:id="@+id/verlauf_favourite"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -49,13 +49,5 @@
         </LinearLayout>
 
     </LinearLayout>
-
-    <View
-        android:id="@+id/dividerView"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:layout_marginRight="8dp"
-        android:background="?android:attr/listDivider"
-        />
 
 </LinearLayout>

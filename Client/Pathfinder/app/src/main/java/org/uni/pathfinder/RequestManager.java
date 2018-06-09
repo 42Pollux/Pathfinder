@@ -16,8 +16,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.uni.pathfinder.ListViews.ListViewAdapterVerlauf;
-import org.uni.pathfinder.ListViews.ListViewEntryVerlauf;
+import org.uni.pathfinder.ListViews.ListViewAdapter;
+import org.uni.pathfinder.ListViews.ListViewEntry;
 import org.uni.pathfinder.activities.Hauptmenu;
 import org.uni.pathfinder.activities.StandortAuswahl;
 import org.uni.pathfinder.network.ConnectionCodes;
@@ -230,7 +230,7 @@ class Queue implements Runnable {
     private Activity helper_act;
     private XMLObject helper_xml;
     private ListView helper_listv;
-    private ArrayList<ListViewEntryVerlauf> helper_verlauf_listventry;
+    private ArrayList<ListViewEntry> helper_listventry;
     private RelativeLayout helper_relativel;
 
 
@@ -330,7 +330,6 @@ class Queue implements Runnable {
                             SharedPreferences.Editor editor = spref.edit();
                             editor.putString("key_uuid", message);
                             editor.commit();
-                            Log.d("DEBUG1", "HIERHIERHIERHIER " + message);
 
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
@@ -358,23 +357,32 @@ class Queue implements Runnable {
                             helper_xml = (XMLObject) data;
                             helper_listv = (ListView) r.view;
                             helper_relativel = (RelativeLayout) r.view2;
-                            helper_verlauf_listventry = new ArrayList<>();
+                            helper_listventry = new ArrayList<>();
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     int counter = 1;
+
+                                    ArrayList<String> path = new ArrayList<>();
                                     for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
-                                        // TODO correct implementation
-                                        helper_verlauf_listventry.add(new ListViewEntryVerlauf(helper_xml.getDataList().get(i), "null", "null"));
+                                        path.add(helper_xml.getDataList().get(i));
+                                        if(helper_xml.getDataList().get(i).equals("end")) {
+                                            ListViewEntry entry = new ListViewEntry("Route " + counter, null, String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-1))));
+                                            entry.setPath(path);
+                                            path = new ArrayList<>();
+
+                                            helper_listventry.add(entry);
+                                            counter++;
+                                        }
                                     }
                                     helper_relativel.setVisibility(View.GONE);
-                                    ListViewAdapterVerlauf adapter = new ListViewAdapterVerlauf(helper_verlauf_listventry, helper_context);
+                                    ListViewAdapter adapter = new ListViewAdapter(helper_listventry, helper_context, R.layout.list_element_ergebnisse);
                                     helper_listv.setAdapter(adapter);
                                     helper_listv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                         @Override
                                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                                            ListViewEntryVerlauf dataModel = helper_verlauf_listventry.get(position);
+                                            ListViewEntry dataModel = helper_listventry.get(position);
                                             // do stuff
                                         }
                                     });
@@ -392,30 +400,28 @@ class Queue implements Runnable {
                             helper_xml = (XMLObject) data;
                             helper_listv = (ListView) r.view;
                             helper_relativel = (RelativeLayout) r.view2;
-                            helper_verlauf_listventry = new ArrayList<>();
+                            helper_listventry = new ArrayList<>();
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     int counter = 1;
+
+                                    ArrayList<String> path = new ArrayList<>();
                                     for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
-                                        Log.d("DEBUG1", "data list size: " + helper_xml.getDataList().size() + ", i: " + i);
-                                        if(helper_xml.getDataList().get(i).equals("end")){
-                                            helper_verlauf_listventry.add(new ListViewEntryVerlauf("Route " + counter, helper_xml.getDataList().get(i-1), String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-2)))));
+                                        path.add(helper_xml.getDataList().get(i));
+                                        if(helper_xml.getDataList().get(i).equals("end")) {
+                                            ListViewEntry entry = new ListViewEntry("Route " + counter, helper_xml.getDataList().get(i-1), String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-2))), R.drawable.ic_heart_outline_grey600_24dp);
+                                            entry.setPath(path);
+                                            path = new ArrayList<>();
+
+                                            helper_listventry.add(entry);
                                             counter++;
                                         }
-
                                     }
                                     helper_relativel.setVisibility(View.GONE);
-                                    ListViewAdapterVerlauf adapter = new ListViewAdapterVerlauf(helper_verlauf_listventry, helper_context);
+                                    ListViewAdapter adapter = new ListViewAdapter(helper_listventry, helper_context, R.layout.list_element_verlauf);
                                     helper_listv.setAdapter(adapter);
-                                    helper_listv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                        @Override
-                                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                                            ListViewEntryVerlauf dataModel = helper_verlauf_listventry.get(position);
-                                            // do stuff
-                                        }
-                                    });
                                 }
                             });
                         }
@@ -460,7 +466,5 @@ class Queue implements Runnable {
             }
         }
     }
-
-
 
 }
