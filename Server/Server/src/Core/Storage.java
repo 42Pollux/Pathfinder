@@ -1,7 +1,7 @@
 package Core;
 import java.util.*;
 
-import ExternalReference.ReferenceObject;
+import org.uni.pathfinder.shared.*;
 
 /**this class stores every relevant meta information for the vertices**/
 public class Storage {

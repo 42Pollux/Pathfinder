@@ -1,4 +1,4 @@
-package ExternalReference;
+package org.uni.pathfinder.shared;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

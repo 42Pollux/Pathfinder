@@ -1,5 +1,6 @@
 package org.uni.pathfinder.activities;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -16,14 +17,23 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import org.uni.pathfinder.R;
 import org.uni.pathfinder.RequestManager;
+import org.uni.pathfinder.SessionStorage;
+import org.uni.pathfinder.network.MapViewInitializer;
+import org.uni.pathfinder.shared.PictureReference;
+import org.uni.pathfinder.shared.ReferenceObject;
+import org.uni.pathfinder.shared.TextReference;
+
+import java.util.ArrayList;
 
 public class Hauptmenu extends AppCompatActivity {
     public static final String SHAREDPREFKEY = "PathfinderPreferences";
     public static Context APPCONTEXT;
     public static boolean INIT = true;
+    private Activity act;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +58,7 @@ public class Hauptmenu extends AppCompatActivity {
         }
 
         APPCONTEXT = getApplicationContext();
+        act = this;
 
         FrameLayout frame_aktuelle_route = (FrameLayout) findViewById(R.id.menu_aktuelle_route);
         FrameLayout frame_neue_route = (FrameLayout) findViewById(R.id.menu_neue_route);
@@ -60,8 +71,12 @@ public class Hauptmenu extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 v.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.frame_click));
-                Intent newAct = new Intent(Hauptmenu.this, AktuelleRoute.class);
-                Hauptmenu.this.startActivity(newAct);
+                if(SessionStorage.selectionMap!=null) {
+                    Intent newAct = new Intent(Hauptmenu.this, AktuelleRoute.class);
+                    Hauptmenu.this.startActivity(newAct);
+                } else {
+                    Toast.makeText(act, "Keine aktuelle Route vorhanden!", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -100,6 +115,7 @@ public class Hauptmenu extends AppCompatActivity {
             }
         });
 
+        Log.d("Hauptmenu", "erstellt");
         frame_einstellungen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

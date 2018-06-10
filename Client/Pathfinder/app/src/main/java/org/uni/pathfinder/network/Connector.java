@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -476,6 +477,23 @@ class ThreadRequest implements Runnable, NetworkingThreadFinishListener, Network
         writeObject(xml);
 
         XMLObject result = (XMLObject) receiveObject();
+
+        debug_log("DataList size: " + result.getDataList().size());
+        debug_log("ReferenceList size: " + result.getReferenceList().size());
+        ArrayList<ArrayList<String>> types = new ArrayList<>();
+        for(int i=0; i<result.getDataList().size(); i++) {
+            int size = 0;
+            if(result.getDataList().get(i).equals("info")) {
+                size = Integer.parseInt(result.getDataList().get(i+1));
+                ArrayList<String> type = new ArrayList<>();
+                for(int j=i; j<i+size; j++) {
+                    type.add(result.getDataList().get(j));
+                }
+                types.add(type);
+                i = i+size;
+            }
+        }
+
         onNetworkingFinished.onNetworkingResult(thread_id_global, null, result, false);
     }
 

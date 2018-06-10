@@ -15,7 +15,7 @@ import exceptions.ConnectionUnexpectedlyClosedException;
 import exceptions.ProtocolErrorException;
 import helper.OSDepPrint;
 import network.ConnectionCodes;
-import org.uni.pathfinder.shared.XMLObject;
+import org.uni.pathfinder.shared.*;
 
 import Access.AccessPoint;
 import Core.Path;
@@ -226,8 +226,41 @@ public class AsynConnectionAuthThread extends Thread {
 		for(int i=0; i<data.size()/2; i++) {
 			OSDepPrint.debug(data.get(i), ref);
 		}
-		// 23.000000000, 54.64
-		//1		
+		// 3 Pfade
+		// 23.00087211, 54.64887
+		// 23.1109388, 54.63452454
+		// 24.16317293, 53.784
+		// 24.09986300, 53.998116001
+		// Selow
+		// Passin
+		// Kambs
+		// Schwaan
+		// 74.00111458
+		// end
+		// 23.00087211, 54.64887
+		// 23.1109388, 54.63452454
+		// 24.16317293, 53.784
+		// 24.09986300, 53.998116001
+		// Selow
+		// Passin
+		// Kambs
+		// Schwaan
+		// 74.00111458
+		// end
+		// 23.00087211, 54.64887
+		// 23.1109388, 54.63452454
+		// 24.16317293, 53.784
+		// 24.09986300, 53.998116001
+		// Selow
+		// Passin
+		// Kambs
+		// Schwaan
+		// 74.00111458
+		// end
+//discord deconnect
+		// 01010101010110
+		// 10101010111110
+		
 		ArrayList<ArrayList<String>>inputs = new ArrayList<ArrayList<String>>();
 		
 		for(int i=0; i<data.size()/2; i=i+3) {
@@ -242,11 +275,24 @@ public class AsynConnectionAuthThread extends Thread {
 			inputs.add(pointDescription);
 			
 		}
-		ArrayList<Path> paths = PathingInterface.getNewRoutes(inputs, client_uid);
+		ArrayList<Path> prev_paths = PathingInterface.getNewRoutes(inputs, client_uid);
+		//ArrayList<Path> prev_paths = new ArrayList<>();
 		
 		XMLObject xmlret = new XMLObject();
+		ArrayList<Path> paths = new ArrayList<>();
+		ArrayList<ArrayList<ReferenceObject>> refs = new ArrayList<>();
 		double distance = 0.0;
+		for(int i=0; i<prev_paths.size(); i++) {
+			Path p = PathingInterface.getFurtherInformations(prev_paths.get(i));
+			paths.add(p);
+		}
 		for(int i=0; i<paths.size(); i++) {
+			for(int j=0; j<paths.get(i).getVertices().size(); j++) {
+				// TODO null in case of no data
+				ArrayList<ReferenceObject> ref_obj = paths.get(i).getVertices().get(j).Storage.getAdditionalInformation();
+				refs.add(ref_obj);
+				OSDepPrint.debug("Found additional info", ref);
+			}
 			for(int j=0; j<paths.get(i).getVertices().size(); j++) {
 				xmlret.addElement(paths.get(i).getVertices().get(j).Storage.getLatitude() + ", " + paths.get(i).getVertices().get(j).Storage.getLongitude());
 			}
@@ -257,11 +303,48 @@ public class AsynConnectionAuthThread extends Thread {
 			}
 			xmlret.addElement(distance + "");
 			xmlret.addElement("end");
+			distance = 0.0;
 		}
 		
+		if(false) {
+			// setup dummy data
+			xmlret.addElement("23.00087251, 54.65687");
+			xmlret.addElement("23.05687293, 54.64861");
+			xmlret.addElement("23.14087247, 54.64332");
+			xmlret.addElement("e14_test");
+			xmlret.addElement("e10_test");
+			xmlret.addElement("e5_test");
+			xmlret.addElement("11.40087211");
+			xmlret.addElement("end");
+			
+			PictureReference p1 = new PictureReference(1,1, "Beispiel");
+			PictureReference p2 = new PictureReference(2,1, "Beispiel1");
+			PictureReference p3 = new PictureReference(3,1, "Beispiel2");
+			
+			PictureReference p4 = new PictureReference(1,1, "Beispiel3");
+			PictureReference p5 = new PictureReference(2,1, "Beispiel4");
+			PictureReference p6 = new PictureReference(3,1, "Beispiel5");
+			
+			ArrayList<ReferenceObject> ref1 = new ArrayList<>();
+			ref1.add(p1);
+			ref1.add(p2);
+			ref1.add(p3);
+			ArrayList<ReferenceObject> ref2 = new ArrayList<>();
+			ref2.add(p4);
+			ref2.add(p5);
+			ref2.add(p6);
+			
+			refs.add(ref1);
+			refs.add(ref2); // not seen by the client because only one path is being sent
+			
+		}
+		
+		xmlret.setReferenceList(refs);
 		
 		checkInterruption();
 		con.writeObject(xmlret);
+		
+		OSDepPrint.debug("Package size: d" + xmlret.getDataList().size() + ", r" + refs.size(), ref);
 		OSDepPrint.net("Paths successfully uploaded", ref);
 		
 	}
@@ -303,6 +386,7 @@ public class AsynConnectionAuthThread extends Thread {
 			xmlret.addElement(distance + "");
 			xmlret.addElement(paths.get(i).getTime());
 			xmlret.addElement("end");
+			distance = 0.0;
 		}
 		for(int i=0; i<xmlret.getDataList().size(); i++) {
 			OSDepPrint.debug(xmlret.getDataList().get(i));

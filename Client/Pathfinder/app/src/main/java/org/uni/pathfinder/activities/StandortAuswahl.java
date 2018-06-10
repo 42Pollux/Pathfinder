@@ -8,6 +8,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -21,19 +23,28 @@ import org.mapsforge.core.graphics.Paint;
 import org.mapsforge.core.graphics.Style;
 import org.mapsforge.core.model.LatLong;
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory;
+import org.mapsforge.map.android.util.AndroidUtil;
 import org.mapsforge.map.android.view.MapView;
+import org.mapsforge.map.datastore.MapDataStore;
+import org.mapsforge.map.layer.cache.TileCache;
 import org.mapsforge.map.layer.overlay.Circle;
+import org.mapsforge.map.layer.renderer.TileRendererLayer;
+import org.mapsforge.map.reader.MapFile;
+import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.util.MapViewProjection;
 import org.uni.pathfinder.LongitudeLatitude;
 import org.uni.pathfinder.MyLocation;
 import org.uni.pathfinder.R;
 import org.uni.pathfinder.RequestManager;
+import org.uni.pathfinder.SessionStorage;
+import org.uni.pathfinder.network.MapViewInitializer;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class StandortAuswahl extends AppCompatActivity {
-    private MapView mapView;
+    private static MapView mapView;
     private Activity act;
     private static MyLocation myLocation;
     private static RelativeLayout loader;
@@ -78,17 +89,36 @@ public class StandortAuswahl extends AppCompatActivity {
             mapView.setClickable(true);
             mapView.getMapScaleBar().setVisible(true);
             mapView.setBuiltInZoomControls(true);
-            MyLocation.LocationResult locationResult = new MyLocation.LocationResult() {
-                @Override
-                public void gotLocation(Location location) {
-                    if((location.getLongitude()>=10)&&(location.getLongitude()<=14)){
-                        if((location.getLatitude()>=53)&&(location.getLatitude()<=55)){
-                            RequestManager.requestSector(act, LongitudeLatitude.MaxMinByLongitudeLatitudeRadius(location.getLatitude(),location.getLongitude(), 10000), mapView);
-                            RequestManager.flush();
+
+            MyLocation.LocationResult locationResult;
+            if(SessionStorage.selectionMap==null) {
+                locationResult = new MyLocation.LocationResult() {
+                    @Override
+                    public void gotLocation(Location location) {
+                        if((location.getLongitude()>=10)&&(location.getLongitude()<=14)){
+                            if((location.getLatitude()>=53)&&(location.getLatitude()<=55)){
+                                RequestManager.requestSector(act, LongitudeLatitude.MaxMinByLongitudeLatitudeRadius(location.getLatitude(),location.getLongitude(), 10000), mapView);
+                                RequestManager.flush();
+                            }
                         }
                     }
-                }
-            };
+                };
+
+                myLocation = new MyLocation();
+                myLocation.getLocation(this, locationResult);
+            } else {
+                TileCache tile_cache = AndroidUtil.createTileCache(this, "mapcache", mapView.getModel().displayModel.getTileSize(), 1f,
+                        mapView.getModel().frameBufferModel.getOverdrawFactor());
+                File map_file = new File(SessionStorage.selectionMap);
+                MapDataStore map_data = new MapFile(map_file);
+                TileRendererLayer trl = new TileRendererLayer(tile_cache, map_data, mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
+                trl.setXmlRenderTheme(InternalRenderTheme.DEFAULT);
+                mapView.getLayerManager().getLayers().add(trl);
+                mapView.setCenter(new LatLong(SessionStorage.selectionMapInit.getLatitude(), SessionStorage.selectionMapInit.getLongitude()));
+                mapView.setZoomLevel((byte)SessionStorage.selectionMapInit.getZoomLevel());
+                StandortAuswahl.getLoader().setVisibility(View.GONE);
+                StandortAuswahl.getCross().setVisibility(View.VISIBLE);
+            }
 
             projection = new MapViewProjection(mapView);
 
@@ -122,9 +152,6 @@ public class StandortAuswahl extends AppCompatActivity {
             });
 
 
-            myLocation = new MyLocation();
-            myLocation.getLocation(this, locationResult);
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -137,6 +164,10 @@ public class StandortAuswahl extends AppCompatActivity {
 
     public static ImageView getCross(){
         return cross;
+    }
+
+    public static MapView getMapView() {
+        return mapView;
     }
 
     public static MyLocation getMyLocation(){
@@ -156,4 +187,42 @@ public class StandortAuswahl extends AppCompatActivity {
         myLocation.cancelTimer();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_standort, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_refresh) {
+            mapView.setVisibility(View.GONE);
+            loader.setVisibility(View.VISIBLE);
+            cross.setVisibility(View.GONE);
+            MyLocation.LocationResult locationResult = new MyLocation.LocationResult() {
+                @Override
+                public void gotLocation(Location location) {
+                    if((location.getLongitude()>=10)&&(location.getLongitude()<=14)){
+                        if((location.getLatitude()>=53)&&(location.getLatitude()<=55)){
+                            RequestManager.requestSector(act, LongitudeLatitude.MaxMinByLongitudeLatitudeRadius(location.getLatitude(),location.getLongitude(), 10000), mapView);
+                            RequestManager.flush();
+                        }
+                    }
+                }
+            };
+
+            myLocation = new MyLocation();
+            myLocation.getLocation(this, locationResult);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 }

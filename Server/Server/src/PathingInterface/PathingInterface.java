@@ -8,9 +8,7 @@ import Core.*;
 import DatabaseConnection.DatabaseConnection;
 import DatabaseConnection.DatabaseConnectionMongoDB;
 import ErrorHandling.*;
-import ExternalReference.PictureReference;
-import ExternalReference.ReferenceObject;
-import ExternalReference.TextReference;
+import org.uni.pathfinder.shared.*;
 import helper.OSDepPrint;
 import Access.*;
 

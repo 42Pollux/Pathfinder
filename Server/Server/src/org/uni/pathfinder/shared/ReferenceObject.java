@@ -14,11 +14,13 @@ public abstract class ReferenceObject implements Serializable {
 	protected int ReferenceID;
 	/**DatabaseID saves an id to identify an object in the database**/
 	protected int DatabaseID;
+	protected String ClassName;
 	protected ArrayList<String> dataList;
 	
 	public ReferenceObject(int referenceID, int databaseID){
 		this.ReferenceID = referenceID;
 		this.DatabaseID = databaseID;
+		this.ClassName = this.getClass().toString();
 		this.dataList = new ArrayList<String>();
 	}
 	
@@ -37,5 +39,10 @@ public abstract class ReferenceObject implements Serializable {
 	public int getDatabaseID()
 	{
 		return this.DatabaseID;
+	}
+	
+	public String getClassName() 
+	{
+		return this.ClassName;
 	}
 }

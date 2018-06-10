@@ -4,10 +4,13 @@
  */
 package server;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.HashMap;
 
 import com.sun.javafx.collections.MappingChange.Map;
 
+import helper.OSDepPrint;
 import map.MapObject;
 import network.ConnectionCodes;
 
@@ -39,8 +42,19 @@ public class ResourceManager {
 	}
 	
 	public static String returnFilePath(long item_id) {
-		// TODO implement
-		return "fsfksdf";
+		File f = new File(location+"res");
+		File[] matchingFiles = f.listFiles(new FilenameFilter() {
+		    public boolean accept(File dir, String name) {
+		        return name.startsWith("" + item_id);
+		    }
+		});
+		if(matchingFiles.length>0) {
+			OSDepPrint.net("Found file " + matchingFiles[0].getAbsolutePath(), 0);
+			return matchingFiles[0].getAbsolutePath();
+		} else {
+			OSDepPrint.net("No file found", 0);
+			return null;
+		}
 	}
 	
 	public static Object returnObject(long object_id) {

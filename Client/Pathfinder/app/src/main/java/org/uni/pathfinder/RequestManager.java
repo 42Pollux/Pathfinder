@@ -2,6 +2,7 @@ package org.uni.pathfinder;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,15 +17,22 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.mapsforge.core.graphics.Color;
+import org.mapsforge.core.graphics.Paint;
+import org.mapsforge.core.graphics.Style;
+import org.mapsforge.map.layer.overlay.Polyline;
 import org.uni.pathfinder.ListViews.ListViewAdapter;
 import org.uni.pathfinder.ListViews.ListViewEntry;
+import org.uni.pathfinder.activities.AktuelleRoute;
 import org.uni.pathfinder.activities.Hauptmenu;
 import org.uni.pathfinder.activities.StandortAuswahl;
+import org.uni.pathfinder.activities.Verlauf;
 import org.uni.pathfinder.network.ConnectionCodes;
 import org.uni.pathfinder.network.Connector;
 import org.uni.pathfinder.network.MapViewInitializer;
 import org.uni.pathfinder.network.NetworkingConsoleListener;
 import org.uni.pathfinder.network.NetworkingThreadFinishListener;
+import org.uni.pathfinder.shared.ReferenceObject;
 import org.uni.pathfinder.shared.XMLObject;
 
 import org.mapsforge.core.model.LatLong;
@@ -37,9 +45,14 @@ import org.mapsforge.map.reader.MapFile;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.view.MapView;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.uni.pathfinder.network.ConnectionCodes.*;
@@ -282,6 +295,18 @@ class Queue implements Runnable {
                         if(!failure){
                             helper_txtv = (TextView) r.view;
                             helper_txt = message;
+                            try {
+                                FileInputStream in_f = new FileInputStream(message);
+                                BufferedReader in = new BufferedReader(new InputStreamReader(in_f));
+
+                                String txt = "", tmp ="";
+                                while((tmp = in.readLine())!=null) {
+                                    txt = txt + tmp + "\n";
+                                }
+                                helper_txt = txt;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -298,6 +323,12 @@ class Queue implements Runnable {
                      * */
                     case SECTOR:
                         if(!failure){
+                            helper_act = r.act;
+
+                            // save map path in session storage
+                            SessionStorage.selectionMap = message;
+                            SessionStorage.selectionMapInit = (MapViewInitializer) data;
+                            // load map into mapview
                             helper_mapv = (org.mapsforge.map.android.view.MapView) r.view;
                             TileCache tile_cache = AndroidUtil.createTileCache(r.act, "mapcache", helper_mapv.getModel().displayModel.getTileSize(), 1f,
                                     helper_mapv.getModel().frameBufferModel.getOverdrawFactor());
@@ -313,8 +344,39 @@ class Queue implements Runnable {
                                     helper_mapv.getLayerManager().getLayers().add(helper_trlayer);
                                     helper_mapv.setCenter(new LatLong(helper_mapvinit.getLatitude(), helper_mapvinit.getLongitude()));
                                     helper_mapv.setZoomLevel((byte)helper_mapvinit.getZoomLevel());
-                                    StandortAuswahl.getLoader().setVisibility(View.GONE);
-                                    StandortAuswahl.getCross().setVisibility(View.VISIBLE);
+                                    if(helper_act.getClass().equals(StandortAuswahl.class)) {
+                                        StandortAuswahl.getMapView().setVisibility(View.VISIBLE);
+                                        StandortAuswahl.getLoader().setVisibility(View.GONE);
+                                        StandortAuswahl.getCross().setVisibility(View.VISIBLE);
+                                    } else {
+                                        AktuelleRoute.getMapView().setVisibility(View.VISIBLE);
+                                        AktuelleRoute.getLoader().setVisibility(View.GONE);
+
+                                        // draw path
+                                        // instantiating the paint object
+                                        Paint paint = AndroidGraphicFactory.INSTANCE.createPaint();
+                                        paint.setColor(Color.BLUE);
+                                        paint.setStrokeWidth(4.0f);
+                                        paint.setStyle(Style.STROKE);
+
+                                        // instantiating the polyline object
+                                        Polyline polyline = new Polyline(paint, AndroidGraphicFactory.INSTANCE);
+
+                                        // set lat lon for the polyline
+                                        List<LatLong> coordinateList = polyline.getLatLongs();
+                                        int actual_path_data = (SessionStorage.currentPath.size())/2;
+
+                                        for(int i=0; i<actual_path_data; i++) {
+                                            String[] latlon = SessionStorage.currentPath.get(i).split(",");
+                                            double l1 = Double.parseDouble(latlon[0].replace(" ", ""));
+                                            double l2 = Double.parseDouble(latlon[1].replace(" ", ""));
+                                            coordinateList.add(new LatLong(l1, l2));
+                                        }
+                                        for(int i=0; i<coordinateList.size(); i++) {
+                                            Log.d("RequestManager", "Polyline node " + coordinateList.get(i).getLatitude() + ", " + coordinateList.get(i).getLongitude());
+                                        }
+                                        helper_mapv.getLayerManager().getLayers().add(polyline);
+                                    }
                                 }
                             });
                         }
@@ -358,37 +420,64 @@ class Queue implements Runnable {
                             helper_listv = (ListView) r.view;
                             helper_relativel = (RelativeLayout) r.view2;
                             helper_listventry = new ArrayList<>();
+                            helper_act = r.act;
                             r.act.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    int counter = 1;
+                                    int counter = 0;
 
+                                    // grab all paths
                                     ArrayList<String> path = new ArrayList<>();
                                     for(int i=0; i<helper_xml.getDataList().size()/2; i++) {
                                         path.add(helper_xml.getDataList().get(i));
                                         if(helper_xml.getDataList().get(i).equals("end")) {
+                                            counter++;
                                             ListViewEntry entry = new ListViewEntry("Route " + counter, null, String.format("%.1f", Double.parseDouble(helper_xml.getDataList().get(i-1))));
                                             entry.setPath(path);
                                             path = new ArrayList<>();
 
+                                            entry.setReferences(null);
                                             helper_listventry.add(entry);
-                                            counter++;
                                         }
                                     }
+
+                                    // shrink reference object list, current workaround
+                                    ArrayList<ReferenceObject> refs = new ArrayList<>();
+                                    for(int i=0; i<helper_xml.getReferenceList().size()/2; i++) {
+                                        for(int j=0; j<helper_xml.getReferenceList().get(i).size(); j++) {
+                                            refs.add(helper_xml.getReferenceList().get(i).get(j));
+                                        }
+                                    }
+
+                                    // save the references data in a list view entry
+                                    for(int i=0; i<helper_listventry.size(); i++) {
+                                        helper_listventry.get(i).setReferences(refs);   // TODO remove workaround (needs to be list of list of lists on server
+                                    }
+                                    Log.d("RequestManager", "Referenzen empfangen: " + helper_xml.getReferenceList().size() + ", size0: " + helper_xml.getReferenceList().get(0).size());
+
+                                    // make the loader disappear
                                     helper_relativel.setVisibility(View.GONE);
                                     ListViewAdapter adapter = new ListViewAdapter(helper_listventry, helper_context, R.layout.list_element_ergebnisse);
                                     helper_listv.setAdapter(adapter);
+
+                                    // start the AktuelleRoute activity and put the specific path data into storage
                                     helper_listv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                         @Override
                                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
                                             ListViewEntry dataModel = helper_listventry.get(position);
-                                            // do stuff
+
+                                            SessionStorage.currentPath = dataModel.getPath();
+                                            SessionStorage.referenceObjects = dataModel.getReferences();
+                                            Intent newAct = new Intent(helper_act, AktuelleRoute.class);
+                                            helper_act.startActivity(newAct);
                                         }
                                     });
                                 }
                             });
+                        } else {
+                            Log.d("RequestManager", "Path request failed");
                         }
+
                         break;
 
                     /*
@@ -453,6 +542,12 @@ class Queue implements Runnable {
                         break;
                     case ConnectionCodes.HISTORY:
                         RequestManager.connector.requestHistory(e.getKey());
+                        break;
+                    case ConnectionCodes.TEXT:
+                        RequestManager.connector.requestText(e.getKey(), e.getValue().item_id);
+                        break;
+                    case ConnectionCodes.IMAGE:
+                        RequestManager.connector.requestImage(e.getKey(), e.getValue().item_id);
                         break;
                 }
                 break;

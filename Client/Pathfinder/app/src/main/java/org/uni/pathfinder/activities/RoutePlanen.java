@@ -149,11 +149,12 @@ public class RoutePlanen extends AppCompatActivity {
 
     private static void loadData(){
         start.setText(dataList.get(0));
+        mid.setText("");
         for(int i=1; i<dataList.size()-1; i++){
             if(mid.getText()=="") {
-                mid.setText(dataList.get(i));
+                mid.setText(dataList.get(i) + "; ");
             } else {
-                mid.setText(mid.getText() + "; " + dataList.get(i));
+                mid.setText(mid.getText() + dataList.get(i) + "; ");
             }
         }
         end.setText(dataList.get(dataList.size()-1));

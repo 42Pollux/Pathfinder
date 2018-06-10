@@ -58,6 +58,7 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
             }
         }
         Log.d("ListViewAdapter/<init>", "---------------------------");
+        if(MeineRouten.getSavedRoutes()==null) return;
         for(int i=0; i<MeineRouten.getSavedRoutes().size(); i++){
             //Log.d("ListViewAdapter/<init>", "Image: " + data.get(i).getImage());
             for(String s : MeineRouten.getSavedRoutes().get(i).getPath()) {
@@ -68,6 +69,11 @@ public class ListViewAdapter extends ArrayAdapter<ListViewEntry> implements View
 
     private boolean comparePaths(ArrayList<String> a, ArrayList<String> b){
         if(a.size()!=b.size()) return false;
+
+        // length comparison not reliable, but current work around
+        double a_length = Double.parseDouble(a.get(a.size()-3));
+        double b_length = Double.parseDouble(b.get(b.size()-3));
+        if(a_length==b_length) return true;
 
         for(int i=0; i<a.size(); i++) {
             if(!a.get(i).equals(b.get(i))) return false;

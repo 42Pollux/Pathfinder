@@ -1,5 +1,7 @@
 package org.uni.pathfinder.ListViews;
 
+import org.uni.pathfinder.shared.ReferenceObject;
+
 import java.util.ArrayList;
 
 public class ListViewEntry {
@@ -7,6 +9,7 @@ public class ListViewEntry {
     private String datum;
     private String distance;
     private ArrayList<String> path;
+    private ArrayList<ReferenceObject> references;
 
     private int image;
 
@@ -49,5 +52,13 @@ public class ListViewEntry {
 
     public void setPath(ArrayList<String> path) {
         this.path = path;
+    }
+
+    public ArrayList<ReferenceObject> getReferences() {
+        return references;
+    }
+
+    public void setReferences(ArrayList<ReferenceObject> references) {
+        this.references = references;
     }
 }
